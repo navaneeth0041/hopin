@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../common_widgets/custom_button.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../routes/route_names.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -10,7 +11,6 @@ class OnboardingScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image
           Positioned.fill(
             child: Image.asset(
               'assets/images/onboarding_bg.jpg',
@@ -31,8 +31,7 @@ class OnboardingScreen extends StatelessWidget {
               },
             ),
           ),
-          
-          // Dark overlay
+
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -47,8 +46,6 @@ class OnboardingScreen extends StatelessWidget {
               ),
             ),
           ),
-          
-          // Content
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -57,7 +54,6 @@ class OnboardingScreen extends StatelessWidget {
                 children: [
                   const Spacer(flex: 2),
                   
-                  // Title
                   Text(
                     AppStrings.onboardingTitle,
                     style: const TextStyle(
@@ -70,8 +66,6 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                   
                   const SizedBox(height: 16),
-                  
-                  // Subtitle
                   Text(
                     AppStrings.onboardingSubtitle,
                     style: TextStyle(
@@ -83,12 +77,10 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                   
                   const SizedBox(height: 40),
-                  
-                  // Continue Button
                   CustomButton(
                     text: AppStrings.continueButton,
                     onPressed: () {
-                      // Navigate to next screen
+                      Navigator.pushNamed(context, RouteNames.login);
                     },
                   ),
                   
