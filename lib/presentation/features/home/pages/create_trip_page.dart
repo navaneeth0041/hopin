@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import 'package:hopin/core/constants/app_colors.dart';
 
 class CreateTripPage extends StatelessWidget {
   const CreateTripPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_circle, size: 80, color: AppColors.primaryYellow),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 120.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+          Icon(
+            Icons.add_circle,
+            size: 80,
+            color: AppColors.primaryYellow,
+          ),
           const SizedBox(height: 16),
           Text(
             'Create Trip',
@@ -23,9 +29,13 @@ class CreateTripPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Start a new trip and share it',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import '../features/onboarding/onboarding_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/settings/settings_screen.dart';
 
 class AppRoutes {
   static Map<String, WidgetBuilder> get routes {
@@ -12,6 +13,7 @@ class AppRoutes {
       RouteNames.login: (context) => const LoginScreen(),
       RouteNames.signup: (context) => const RegisterScreen(),
       RouteNames.home: (context) => const HomeScreen(),
+      RouteNames.settings: (context) => const SettingsScreen(),
     };
   }
   
@@ -32,6 +34,10 @@ class AppRoutes {
       case RouteNames.home:
         return MaterialPageRoute(
           builder: (context) => const HomeScreen(),
+        );
+      case RouteNames.settings:
+        return MaterialPageRoute(
+          builder: (context) => const SettingsScreen(),
         );
       default:
         return null;
