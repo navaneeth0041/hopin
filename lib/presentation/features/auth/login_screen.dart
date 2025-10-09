@@ -28,15 +28,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-      Navigator.pushReplacementNamed(context, RouteNames.home);
-
+    Navigator.pushReplacementNamed(context, RouteNames.home);
   }
 
-  void _handleGoogleLogin() {
-  }
-
-  void _handleAppleLogin() {
-  }
+  void _handleGoogleLogin() {}
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +57,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 Text(
                   AppStrings.loginSubtitle,
                   style: TextStyle(
@@ -74,9 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 Align(
                   alignment: Alignment.centerLeft,
                   child: const Text(
@@ -91,22 +86,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: _emailController,
-                  hintText: 'Gail_santos@icloud.Com',
+                  hintText: '@am.students.amrita.edu',
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                        .hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 Align(
                   alignment: Alignment.centerLeft,
                   child: const Text(
@@ -147,9 +143,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -188,6 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
+                        Navigator.pushNamed(context, RouteNames.forgotPassword);
                       },
                       child: const Text(
                         'Forgot Password ?',
@@ -200,16 +197,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 Row(
                   children: [
                     const Expanded(
-                      child: Divider(
-                        color: AppColors.divider,
-                        thickness: 1,
-                      ),
+                      child: Divider(color: AppColors.divider, thickness: 1),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -222,32 +216,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const Expanded(
-                      child: Divider(
-                        color: AppColors.divider,
-                        thickness: 1,
-                      ),
+                      child: Divider(color: AppColors.divider, thickness: 1),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 SocialAuthButton(
                   text: AppStrings.continueWithGoogle,
                   icon: Icons.g_mobiledata,
                   onPressed: _handleGoogleLogin,
                 ),
-                
-                const SizedBox(height: 16),
-                
-                SocialAuthButton(
-                  text: AppStrings.continueWithApple,
-                  icon: Icons.apple,
-                  onPressed: _handleAppleLogin,
-                ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -278,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 40),
               ],
             ),

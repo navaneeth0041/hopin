@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../common_widgets/custom_button.dart';
 import '../../common_widgets/custom_text_field.dart';
 import '../../common_widgets/social_auth_button.dart';
@@ -17,8 +18,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _studentIdController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _emergencyNameController = TextEditingController();
+  final _emergencyPhoneController = TextEditingController();
   bool _acceptTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -27,9 +32,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _studentIdController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _emergencyNameController.dispose();
+    _emergencyPhoneController.dispose();
     super.dispose();
+  }
+
+  String _getPasswordStrength(String password) {
+    if (password.isEmpty) return '';
+    if (password.length < 6) return 'Weak';
+    if (password.length < 8) return 'Fair';
+
+    bool hasUppercase = password.contains(RegExp(r'[A-Z]'));
+    bool hasLowercase = password.contains(RegExp(r'[a-z]'));
+    bool hasDigits = password.contains(RegExp(r'[0-9]'));
+    bool hasSpecialCharacters = password.contains(
+      RegExp(r'[!@#$%^&*(),.?":{}|<>]'),
+    );
+
+    int strength = 0;
+    if (hasUppercase) strength++;
+    if (hasLowercase) strength++;
+    if (hasDigits) strength++;
+    if (hasSpecialCharacters) strength++;
+
+    if (password.length >= 8 && strength >= 3) return 'Strong';
+    if (password.length >= 8 && strength >= 2) return 'Good';
+    return 'Fair';
+  }
+
+  Color _getPasswordStrengthColor(String strength) {
+    switch (strength) {
+      case 'Weak':
+        return AppColors.accentRed;
+      case 'Fair':
+        return Colors.orange;
+      case 'Good':
+        return Colors.lightGreen;
+      case 'Strong':
+        return Colors.green;
+      default:
+        return Colors.transparent;
+    }
   }
 
   void _handleRegister() {
@@ -43,16 +90,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         return;
       }
-      Navigator.pushReplacementNamed(context, RouteNames.home);
+      Navigator.pushNamed(
+        context,
+        RouteNames.otpVerification,
+        arguments: _emailController.text,
+      );
     }
   }
 
   void _handleGoogleSignup() {}
 
-  void _handleAppleSignup() {}
+  Widget _buildFieldLabel(String label, {bool required = true}) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: RichText(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+          children: required
+              ? [
+                  const TextSpan(
+                    text: ' *',
+                    style: TextStyle(
+                      color: AppColors.accentRed,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ]
+              : [],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    String passwordStrength = _getPasswordStrength(_passwordController.text);
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: SafeArea(
@@ -89,17 +167,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
 
                 const SizedBox(height: 40),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'Full Name',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+
+                _buildFieldLabel('Full Name'),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: _nameController,
@@ -118,30 +187,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 24),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'Email',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+                _buildFieldLabel('Institutional Email'),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: _emailController,
-                  hintText: 'example@email.com',
+                  hintText: 'example@am.amrita.edu',
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Please enter your institutional email';
                     }
-                    if (!RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    ).hasMatch(value)) {
-                      return 'Please enter a valid email';
+                    if (!RegExp(r'^[\w-\.]+@.*amrita\.edu$').hasMatch(value)) {
+                      return 'Please enter a valid @amrita.edu email';
                     }
                     return null;
                   },
@@ -149,22 +206,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 24),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'Password',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                _buildFieldLabel('Student ID Number'),
+                const SizedBox(height: 8),
+                CustomTextField(
+                  controller: _studentIdController,
+                  hintText: 'AM.EN.U4CSE21001',
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.characters,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your student ID';
+                    }
+                    if (value.length < 5) {
+                      return 'Please enter a valid student ID';
+                    }
+                    return null;
+                  },
                 ),
+
+                const SizedBox(height: 24),
+
+                _buildFieldLabel('Phone Number'),
+                const SizedBox(height: 8),
+                CustomTextField(
+                  controller: _phoneController,
+                  hintText: '+91 98765 43210',
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your phone number';
+                    }
+                    if (value.length != 10) {
+                      return 'Please enter a valid 10-digit phone number';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                _buildFieldLabel('Password'),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: _passwordController,
                   hintText: '••••••••',
                   obscureText: _obscurePassword,
+                  onChanged: (value) {
+                    setState(() {});
+                  },
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
@@ -190,19 +283,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
 
+                if (_passwordController.text.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: passwordStrength.isNotEmpty
+                                ? _getPasswordStrengthColor(passwordStrength)
+                                : AppColors.divider,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        passwordStrength,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _getPasswordStrengthColor(passwordStrength),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
                 const SizedBox(height: 24),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'Confirm Password',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+                _buildFieldLabel('Confirm Password'),
                 const SizedBox(height: 8),
                 CustomTextField(
                   controller: _confirmPasswordController,
@@ -233,7 +344,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
 
+                const SizedBox(height: 32),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Emergency Contact',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 16),
+
+                _buildFieldLabel('Emergency Contact Name'),
+                const SizedBox(height: 8),
+                CustomTextField(
+                  controller: _emergencyNameController,
+                  hintText: 'Jane Doe',
+                  keyboardType: TextInputType.name,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter emergency contact name';
+                    }
+                    if (value.length < 3) {
+                      return 'Name must be at least 3 characters';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                _buildFieldLabel('Emergency Contact Number'),
+                const SizedBox(height: 8),
+                CustomTextField(
+                  controller: _emergencyPhoneController,
+                  hintText: '+91 98765 43210',
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter emergency contact number';
+                    }
+                    if (value.length != 10) {
+                      return 'Please enter a valid 10-digit phone number';
+                    }
+                    if (value == _phoneController.text) {
+                      return 'Emergency contact should be different from your number';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 24),
 
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,14 +486,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   text: AppStrings.continueWithGoogle,
                   icon: Icons.g_mobiledata,
                   onPressed: _handleGoogleSignup,
-                ),
-
-                const SizedBox(height: 16),
-
-                SocialAuthButton(
-                  text: AppStrings.continueWithApple,
-                  icon: Icons.apple,
-                  onPressed: _handleAppleSignup,
                 ),
 
                 const SizedBox(height: 24),

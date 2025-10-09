@@ -2,6 +2,9 @@ class RouteNames {
   static const String onboarding = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String otpVerification = 'otp-verification';
+  static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
 
   static const String home = '/home';
 

@@ -31,8 +31,8 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      onGenerateRoute: AppRoutes.onGenerateRoute,
       initialRoute: RouteNames.onboarding,
-      routes: AppRoutes.routes,
     );
   }
 }
