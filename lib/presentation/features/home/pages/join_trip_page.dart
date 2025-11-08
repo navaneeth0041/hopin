@@ -179,83 +179,362 @@ class _JoinTripPageState extends State<JoinTripPage> {
   }
 
   void _handleJoinRide(RideModel ride) {
+    String noteText = '';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Icon(
-          Icons.check_circle_outline,
-          color: AppColors.primaryYellow,
-          size: 60,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Join this ride?',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'You\'re about to join ${ride.driverName}\'s ride',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+      builder: (dialogContext) {
+        final TextEditingController noteController = TextEditingController();
+
+        return AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: AppColors.accentGreen,
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.directions_car,
+                  color: AppColors.primaryYellow,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Join Ride',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Ride request sent to ${ride.driverName}',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                      children: [
+                        const TextSpan(text: 'You\'re requesting to join '),
+                        TextSpan(
+                          text: ride.driverName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
+                        const TextSpan(text: '\'s ride'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.divider, width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryYellow.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.my_location,
+                              size: 16,
+                              color: AppColors.primaryYellow,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'From',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  ride.from,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 18),
+                            Container(
+                              width: 2,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    AppColors.primaryYellow.withOpacity(0.3),
+                                    AppColors.accentGreen.withOpacity(0.3),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.location_on,
+                              size: 16,
+                              color: AppColors.accentGreen,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'To',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  ride.to,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  backgroundColor: AppColors.cardBackground,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.message,
+                        color: AppColors.accentBlue,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Add a message',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '(optional)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: noteController,
+                  maxLines: 3,
+                  maxLength: 150,
+                  onChanged: (value) {
+                    noteText = value;
+                  },
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText:
+                        'e.g., "I have 2 luggage bags" or "Running 5 mins late"',
+                    hintStyle: TextStyle(
+                      color: AppColors.textSecondary.withOpacity(0.5),
+                      fontSize: 13,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.darkBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: AppColors.divider,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.primaryYellow,
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                    counterStyle: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryYellow,
-              foregroundColor: Colors.black,
+              ],
             ),
-            child: const Text('Confirm'),
           ),
-        ],
-      ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: AppColors.divider, width: 1),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentGreen.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: AppColors.accentGreen,
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Request sent to ${ride.driverName}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          backgroundColor: AppColors.cardBackground,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.all(16),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryYellow,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Send Request',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
