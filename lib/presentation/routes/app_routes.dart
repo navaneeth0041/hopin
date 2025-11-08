@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hopin/presentation/common_widgets/splash_screen.dart';
 import 'route_names.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/auth/login_screen.dart';
@@ -12,6 +13,7 @@ import '../features/settings/settings_screen.dart';
 class AppRoutes {
   static Map<String, WidgetBuilder> get routes {
     return {
+      RouteNames.splash: (context) => const SplashScreen(),
       RouteNames.onboarding: (context) => const OnboardingScreen(),
       RouteNames.login: (context) => const LoginScreen(),
       RouteNames.signup: (context) => const RegisterScreen(),
@@ -24,6 +26,10 @@ class AppRoutes {
   
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case RouteNames.splash:
+        return MaterialPageRoute(
+          builder: (context) => const SplashScreen(),
+        );
       case RouteNames.onboarding:
         return MaterialPageRoute(
           builder: (context) => const OnboardingScreen(),
