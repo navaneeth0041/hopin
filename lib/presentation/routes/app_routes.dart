@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
 import 'route_names.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/auth/login_screen.dart';
@@ -28,6 +29,7 @@ class AppRoutes {
       RouteNames.about: (context) => const AboutScreen(),
       RouteNames.privacyPolicy: (context) => const PrivacyPolicyScreen(),
       RouteNames.termsOfService: (context) => const TermsOfServiceScreen(),
+      RouteNames.help: (context) => const HelpFaqScreen(),
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
       RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
@@ -67,6 +69,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen());
       case RouteNames.termsOfService:
         return MaterialPageRoute(builder: (context) => const TermsOfServiceScreen());
+      case RouteNames.help:
+        return MaterialPageRoute(builder: (context) => const HelpFaqScreen());
       case RouteNames.emergencyContact:
         return MaterialPageRoute(
           builder: (context) => const EmergencyContactScreen(),
@@ -87,7 +91,6 @@ class AppRoutes {
       case RouteNames.privacy:
       case RouteNames.blockedUsers:
       case RouteNames.changePassword:
-      case RouteNames.help:
       case RouteNames.licenses:
         return MaterialPageRoute(
           builder: (context) =>
@@ -108,7 +111,6 @@ class AppRoutes {
       RouteNames.privacy: 'Privacy & Data',
       RouteNames.blockedUsers: 'Blocked Users',
       RouteNames.changePassword: 'Change Password',
-      RouteNames.help: 'Help & FAQ',
       RouteNames.licenses: 'Open Source Licenses',
     };
     return titles[routeName] ?? 'Screen';
