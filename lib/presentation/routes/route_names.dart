@@ -1,24 +1,35 @@
 class RouteNames {
-  static const String splash = '/';
-  static const String onboarding = '/onboarding';
+  // Auth Routes
+  static const String onboarding = '/';
   static const String login = '/login';
   static const String signup = '/signup';
-  static const String otpVerification = 'otp-verification';
+  static const String otpVerification = '/otp-verification';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
 
+  // Main Routes
   static const String home = '/home';
-
   static const String profile = '/profile';
   static const String settings = '/settings';
 
-  static const String rideBooking = '/ride-booking';
-  static const String rideHistory = '/ride-history';
+  // Profile Related Routes
+  static const String tripHistory = '/trip-history';
+  static const String emergencyContact = '/emergency-contact';
+  static const String driverDirectory = '/driver-directory';
+  static const String reportSupport = '/report-support';
 
-  static const String addHome = '/settings/add-home';
-  static const String addWork = '/settings/add-work';
-  static const String shortcuts = '/settings/shortcuts';
-  static const String privacy = '/settings/privacy';
-  static const String communication = '/settings/communication';
-  static const String safetyPreferences = '/settings/safety-preferences';
+  // Settings Related Routes
+  static const String editProfile = '/edit-profile';
+  static const String notificationSettings = '/notification-settings';
+  static const String locationSettings = '/location-settings';
+  static const String privacy = '/privacy';
+  static const String blockedUsers = '/blocked-users';
+  static const String changePassword = '/change-password';
+  static const String help = '/help';
+  static const String about = '/about';
+
+  // Trip Routes
+  static const String createTrip = '/create-trip';
+  static const String joinTrip = '/join-trip';
+  static const String tripDetails = '/trip-details';
 }
