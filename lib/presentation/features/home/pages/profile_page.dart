@@ -14,11 +14,10 @@ class ProfilePage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
           child: Column(
             children: [
-              // Header with Settings button only
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 44), // Spacer for alignment
+                  const SizedBox(width: 44),
                   Text(
                     'Profile',
                     style: TextStyle(
@@ -51,7 +50,6 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Profile Header - FR-7: User Profile
               const ProfileHeader(
                 name: 'Laaal Singh',
                 email: 'laal_jodhil@am.amrita.edu',
@@ -61,7 +59,6 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // FR-7: Trip History
               ProfileMenuItem(
                 icon: Icons.history,
                 title: 'Trip History',
@@ -73,7 +70,6 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // FR-9: Emergency Contact/SOS Setup
               ProfileMenuItem(
                 icon: Icons.emergency_outlined,
                 title: 'Emergency Contact',
@@ -85,7 +81,6 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // FR-6: Verified Drivers Directory
               ProfileMenuItem(
                 icon: Icons.local_taxi_outlined,
                 title: 'Driver Directory',
@@ -97,7 +92,6 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // FR-9: Report/Support
               ProfileMenuItem(
                 icon: Icons.report_problem_outlined,
                 title: 'Report & Support',
@@ -109,7 +103,6 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Settings (moved to bottom)
               ProfileMenuItem(
                 icon: Icons.settings_outlined,
                 title: 'Settings',

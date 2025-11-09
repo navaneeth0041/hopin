@@ -9,6 +9,7 @@ import '../../presentation/features/auth/reset_password_screen.dart';
 import '../../presentation/features/home/home_screen.dart';
 import '../../presentation/features/settings/settings_screen.dart';
 import '../../presentation/features/emergency_contact/emergency_contact_screen.dart';
+import '../../presentation/features/driver_directory/driver_directory_screen.dart';
 
 class AppRoutes {
   static Map<String, WidgetBuilder> get routes {
@@ -21,6 +22,7 @@ class AppRoutes {
       RouteNames.home: (context) => const HomeScreen(),
       RouteNames.settings: (context) => const SettingsScreen(),
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
+      RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
     };
   }
 
@@ -55,9 +57,12 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => const EmergencyContactScreen(),
         );
+      case RouteNames.driverDirectory:
+        return MaterialPageRoute(
+          builder: (context) => const DriverDirectoryScreen(),
+        );
 
       case RouteNames.tripHistory:
-      case RouteNames.driverDirectory:
       case RouteNames.reportSupport:
       case RouteNames.editProfile:
       case RouteNames.notificationSettings:
@@ -80,7 +85,6 @@ class AppRoutes {
   static String _getScreenTitle(String routeName) {
     final titles = {
       RouteNames.tripHistory: 'Trip History',
-      RouteNames.driverDirectory: 'Driver Directory',
       RouteNames.reportSupport: 'Report & Support',
       RouteNames.editProfile: 'Edit Profile',
       RouteNames.notificationSettings: 'Notification Settings',
