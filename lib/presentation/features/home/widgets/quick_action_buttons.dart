@@ -48,34 +48,34 @@ class QuickActionButtons extends StatelessWidget {
         // ),
         const SizedBox(height: 16),
 
-        Row(
-          children: [
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.directions_car_outlined,
-                label: 'Find Rides',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Navigate to Find Rides')),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.emergency_outlined,
-                label: 'Emergency SOS',
-                backgroundColor: AppColors.accentRed,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Emergency SOS Activated')),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        // Row(
+        //   children: [
+        //     Expanded(
+        //       child: _ActionButton(
+        //         icon: Icons.directions_car_outlined,
+        //         label: 'Find Rides',
+        //         onPressed: () {
+        //           ScaffoldMessenger.of(context).showSnackBar(
+        //             const SnackBar(content: Text('Navigate to Find Rides')),
+        //           );
+        //         },
+        //       ),
+        //     ),
+        //     const SizedBox(width: 12),
+        //     Expanded(
+        //       child: _ActionButton(
+        //         icon: Icons.emergency_outlined,
+        //         label: 'Emergency SOS',
+        //         backgroundColor: AppColors.accentRed,
+        //         onPressed: () {
+        //           ScaffoldMessenger.of(context).showSnackBar(
+        //             const SnackBar(content: Text('Emergency SOS Activated')),
+        //           );
+        //         },
+        //       ),
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
@@ -111,19 +111,12 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.divider,
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.divider, width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 20,
-            ),
+            Icon(icon, color: iconColor, size: 20),
             const SizedBox(height: 4),
             Text(
               label,

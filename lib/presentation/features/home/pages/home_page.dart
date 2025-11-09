@@ -4,7 +4,6 @@ import 'package:hopin/presentation/features/home/widgets/nearby_trips_section.da
 import '../widgets/home_header.dart';
 import '../widgets/quick_action_buttons.dart';
 import '../widgets/active_trips_section.dart';
-// import '../widgets/nearby_trips_section.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,10 +27,8 @@ class _HomePageState extends State<HomePage> {
             const QuickActionButtons(),
             const SizedBox(height: 32),
 
-            const ActiveTripsSection(),
-            const SizedBox(height: 32),
-
-            const NearbyTripsSection(),
+            const ActiveRideCard(),
+            const SizedBox(height: 500),
           ],
         ),
       ),
