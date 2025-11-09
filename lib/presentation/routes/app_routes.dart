@@ -12,6 +12,7 @@ import '../../presentation/features/settings/settings_screen.dart';
 import '../../presentation/features/settings/about_screen.dart';
 import '../../presentation/features/settings/privacy_policy_screen.dart';
 import '../../presentation/features/settings/terms_of_service_screen.dart';
+import '../../presentation/features/settings/change_password_screen.dart';
 import '../../presentation/features/emergency_contact/emergency_contact_screen.dart';
 import '../../presentation/features/driver_directory/driver_directory_screen.dart';
 import '../../presentation/features/report_support/report_support_screen.dart';
@@ -30,6 +31,7 @@ class AppRoutes {
       RouteNames.privacyPolicy: (context) => const PrivacyPolicyScreen(),
       RouteNames.termsOfService: (context) => const TermsOfServiceScreen(),
       RouteNames.help: (context) => const HelpFaqScreen(),
+      RouteNames.changePassword: (context) => const ChangePasswordScreen(),
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
       RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
@@ -71,6 +73,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (context) => const TermsOfServiceScreen());
       case RouteNames.help:
         return MaterialPageRoute(builder: (context) => const HelpFaqScreen());
+      case RouteNames.changePassword:
+        return MaterialPageRoute(builder: (context) => const ChangePasswordScreen());
       case RouteNames.emergencyContact:
         return MaterialPageRoute(
           builder: (context) => const EmergencyContactScreen(),
@@ -90,7 +94,6 @@ class AppRoutes {
       case RouteNames.locationSettings:
       case RouteNames.privacy:
       case RouteNames.blockedUsers:
-      case RouteNames.changePassword:
       case RouteNames.licenses:
         return MaterialPageRoute(
           builder: (context) =>
@@ -110,7 +113,6 @@ class AppRoutes {
       RouteNames.locationSettings: 'Location Settings',
       RouteNames.privacy: 'Privacy & Data',
       RouteNames.blockedUsers: 'Blocked Users',
-      RouteNames.changePassword: 'Change Password',
       RouteNames.licenses: 'Open Source Licenses',
     };
     return titles[routeName] ?? 'Screen';
