@@ -28,6 +28,11 @@ class RouteNames {
   static const String help = '/help';
   static const String about = '/about';
 
+  // Legal Routes
+  static const String privacyPolicy = '/privacy-policy';
+  static const String termsOfService = '/terms-of-service';
+  static const String licenses = '/licenses';
+
   // Trip Routes
   static const String createTrip = '/create-trip';
   static const String joinTrip = '/join-trip';

@@ -4,12 +4,14 @@ import 'package:hopin/core/constants/app_colors.dart';
 class SettingsMenuItem extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
   const SettingsMenuItem({
     super.key,
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.onTap,
   });
 
@@ -18,7 +20,7 @@ class SettingsMenuItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: const Color(0xFF1C1C1E),
           borderRadius: BorderRadius.circular(16),
@@ -26,27 +28,36 @@ class SettingsMenuItem extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: const Color(0xFF2C2C2E),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.textPrimary,
-                size: 20,
-              ),
+              child: Icon(icon, color: AppColors.textPrimary, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
             Icon(

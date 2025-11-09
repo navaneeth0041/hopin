@@ -13,9 +13,8 @@ class SettingsScreen extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -44,13 +43,12 @@ class SettingsScreen extends StatelessWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 44), // Spacer for alignment
+                    const SizedBox(width: 44),
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // FR-7: User Profile Header with Edit capability
                 const SettingsHeader(
                   name: 'Orville Black',
                   email: 'orville.black@am.amrita.edu',
@@ -60,119 +58,76 @@ class SettingsScreen extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                Text(
-                  'Account Settings',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // FR-7: Edit Personal Information
-                SettingsMenuItem(
-                  icon: Icons.person_outline,
-                  title: 'Edit Profile',
-                  onTap: () {
-                    Navigator.pushNamed(context, '/edit-profile');
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // FR-8: Notification Preferences
                 SettingsMenuItem(
                   icon: Icons.notifications_outlined,
                   title: 'Notifications',
+                  subtitle: 'Manage notification preferences',
                   onTap: () {
                     Navigator.pushNamed(context, '/notification-settings');
                   },
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // FR-8: Location/GPS Settings
                 SettingsMenuItem(
                   icon: Icons.location_on_outlined,
                   title: 'Location Settings',
+                  subtitle: 'Control GPS and location access',
                   onTap: () {
                     Navigator.pushNamed(context, '/location-settings');
                   },
                 ),
 
-                const SizedBox(height: 32),
-
-                Text(
-                  'Privacy & Security',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-
                 const SizedBox(height: 16),
 
-                // Security Requirements
                 SettingsMenuItem(
                   icon: Icons.lock_outline,
                   title: 'Privacy & Data',
+                  subtitle: 'Manage your privacy settings',
                   onTap: () {
                     Navigator.pushNamed(context, '/privacy');
                   },
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // FR-9: Block/Report Settings
                 SettingsMenuItem(
                   icon: Icons.block_outlined,
                   title: 'Blocked Users',
+                  subtitle: 'View and manage blocked contacts',
                   onTap: () {
                     Navigator.pushNamed(context, '/blocked-users');
                   },
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // Authentication
                 SettingsMenuItem(
                   icon: Icons.password_outlined,
                   title: 'Change Password',
+                  subtitle: 'Update your account password',
                   onTap: () {
                     Navigator.pushNamed(context, '/change-password');
                   },
                 ),
 
-                const SizedBox(height: 32),
-
-                Text(
-                  'About',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-
                 const SizedBox(height: 16),
 
-                // Support
                 SettingsMenuItem(
                   icon: Icons.help_outline,
                   title: 'Help & FAQ',
+                  subtitle: 'Get help and find answers',
                   onTap: () {
                     Navigator.pushNamed(context, '/help');
                   },
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
                 SettingsMenuItem(
                   icon: Icons.info_outline,
                   title: 'About HopIn',
+                  subtitle: 'App version and information',
                   onTap: () {
                     Navigator.pushNamed(context, '/about');
                   },
@@ -180,17 +135,21 @@ class SettingsScreen extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // Logout Button
                 GestureDetector(
                   onTap: () {
-                    // Show logout confirmation dialog
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
                         backgroundColor: const Color(0xFF2C2C2E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         title: Text(
                           'Logout',
-                          style: TextStyle(color: AppColors.textPrimary),
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         content: Text(
                           'Are you sure you want to logout?',
@@ -201,12 +160,14 @@ class SettingsScreen extends StatelessWidget {
                             onPressed: () => Navigator.pop(context),
                             child: Text(
                               'Cancel',
-                              style: TextStyle(color: AppColors.textSecondary),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           TextButton(
                             onPressed: () {
-                              // Perform logout
                               Navigator.pushNamedAndRemoveUntil(
                                 context,
                                 '/login',
@@ -215,7 +176,10 @@ class SettingsScreen extends StatelessWidget {
                             },
                             child: Text(
                               'Logout',
-                              style: TextStyle(color: AppColors.primaryYellow),
+                              style: TextStyle(
+                                color: Colors.red[400],
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -227,6 +191,10 @@ class SettingsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF1C1C1E),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.red.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Center(
                       child: Text(

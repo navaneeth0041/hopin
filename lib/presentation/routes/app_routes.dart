@@ -8,6 +8,9 @@ import '../../presentation/features/auth/forgot_password_screen.dart';
 import '../../presentation/features/auth/reset_password_screen.dart';
 import '../../presentation/features/home/home_screen.dart';
 import '../../presentation/features/settings/settings_screen.dart';
+import '../../presentation/features/settings/about_screen.dart';
+import '../../presentation/features/settings/privacy_policy_screen.dart';
+import '../../presentation/features/settings/terms_of_service_screen.dart';
 import '../../presentation/features/emergency_contact/emergency_contact_screen.dart';
 import '../../presentation/features/driver_directory/driver_directory_screen.dart';
 import '../../presentation/features/report_support/report_support_screen.dart';
@@ -22,6 +25,9 @@ class AppRoutes {
       RouteNames.resetPassword: (context) => const ResetPasswordScreen(),
       RouteNames.home: (context) => const HomeScreen(),
       RouteNames.settings: (context) => const SettingsScreen(),
+      RouteNames.about: (context) => const AboutScreen(),
+      RouteNames.privacyPolicy: (context) => const PrivacyPolicyScreen(),
+      RouteNames.termsOfService: (context) => const TermsOfServiceScreen(),
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
       RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
@@ -55,6 +61,12 @@ class AppRoutes {
         return MaterialPageRoute(builder: (context) => const HomeScreen());
       case RouteNames.settings:
         return MaterialPageRoute(builder: (context) => const SettingsScreen());
+      case RouteNames.about:
+        return MaterialPageRoute(builder: (context) => const AboutScreen());
+      case RouteNames.privacyPolicy:
+        return MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen());
+      case RouteNames.termsOfService:
+        return MaterialPageRoute(builder: (context) => const TermsOfServiceScreen());
       case RouteNames.emergencyContact:
         return MaterialPageRoute(
           builder: (context) => const EmergencyContactScreen(),
@@ -76,7 +88,7 @@ class AppRoutes {
       case RouteNames.blockedUsers:
       case RouteNames.changePassword:
       case RouteNames.help:
-      case RouteNames.about:
+      case RouteNames.licenses:
         return MaterialPageRoute(
           builder: (context) =>
               PlaceholderScreen(title: _getScreenTitle(settings.name ?? '')),
@@ -97,7 +109,7 @@ class AppRoutes {
       RouteNames.blockedUsers: 'Blocked Users',
       RouteNames.changePassword: 'Change Password',
       RouteNames.help: 'Help & FAQ',
-      RouteNames.about: 'About HopIn',
+      RouteNames.licenses: 'Open Source Licenses',
     };
     return titles[routeName] ?? 'Screen';
   }
@@ -127,7 +139,7 @@ class PlaceholderScreen extends StatelessWidget {
             Icon(Icons.construction, size: 64, color: const Color(0xFFFFC107)),
             const SizedBox(height: 24),
             Text(
-              '$title',
+              title,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
