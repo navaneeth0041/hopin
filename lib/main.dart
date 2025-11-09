@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       onGenerateRoute: AppRoutes.onGenerateRoute,
-      initialRoute: RouteNames.splash,
+      initialRoute: RouteNames.onboarding,
     );
   }
 }

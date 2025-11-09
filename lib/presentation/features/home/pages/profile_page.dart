@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import '../widgets/profile_header.dart';
-import '../widgets/profile_action_card.dart';
 import '../widgets/profile_menu_item.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -15,26 +14,11 @@ class ProfilePage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
           child: Column(
             children: [
+              // Header with Settings button only
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2C2C2E),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: Icon(
-                        Icons.share_outlined,
-                        color: AppColors.textPrimary,
-                        size: 20,
-                      ),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
+                  const SizedBox(width: 44), // Spacer for alignment
                   Text(
                     'Profile',
                     style: TextStyle(
@@ -67,74 +51,69 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Profile Header - FR-7: User Profile
               const ProfileHeader(
                 name: 'Laaal Singh',
-                email: 'laal_jodhil@hotmale.com',
+                email: 'laal_jodhil@am.amrita.edu',
                 profileImage: null,
                 completionPercentage: 76,
               ),
 
               const SizedBox(height: 32),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: ProfileActionCard(
-                      icon: Icons.help_outline,
-                      title: 'Help',
-                      subtitle: 'Help is Here.',
-                      onTap: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ProfileActionCard(
-                      icon: Icons.wallet_outlined,
-                      title: 'Wallet',
-                      subtitle: 'Easy Pay',
-                      onTap: () {},
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: ProfileActionCard(
-                      icon: Icons.assignment_outlined,
-                      title: 'Activity',
-                      subtitle: 'Activity Feed',
-                      onTap: () {},
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ProfileActionCard(
-                      icon: Icons.mail_outline,
-                      title: 'Message',
-                      subtitle: 'Chat Now',
-                      onTap: () {},
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
+              // FR-7: Trip History
               ProfileMenuItem(
-                icon: Icons.bookmark_border,
-                title: 'Save Groups',
-                onTap: () {},
+                icon: Icons.history,
+                title: 'Trip History',
+                subtitle: 'View past rides and payments',
+                onTap: () {
+                  Navigator.pushNamed(context, '/trip-history');
+                },
               ),
 
               const SizedBox(height: 16),
 
+              // FR-9: Emergency Contact/SOS Setup
+              ProfileMenuItem(
+                icon: Icons.emergency_outlined,
+                title: 'Emergency Contact',
+                subtitle: 'Setup SOS and emergency contacts',
+                onTap: () {
+                  Navigator.pushNamed(context, '/emergency-contact');
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // FR-6: Verified Drivers Directory
+              ProfileMenuItem(
+                icon: Icons.local_taxi_outlined,
+                title: 'Driver Directory',
+                subtitle: 'View verified auto/taxi drivers',
+                onTap: () {
+                  Navigator.pushNamed(context, '/driver-directory');
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // FR-9: Report/Support
+              ProfileMenuItem(
+                icon: Icons.report_problem_outlined,
+                title: 'Report & Support',
+                subtitle: 'Report issues or get help',
+                onTap: () {
+                  Navigator.pushNamed(context, '/report-support');
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Settings (moved to bottom)
               ProfileMenuItem(
                 icon: Icons.settings_outlined,
-                title: 'Setting',
+                title: 'Settings',
+                subtitle: 'Account and app preferences',
                 onTap: () {
                   Navigator.pushNamed(context, '/settings');
                 },
