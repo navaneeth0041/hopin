@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
+import 'dart:io';
 
 class SettingsHeader extends StatelessWidget {
   final String name;
@@ -18,30 +19,35 @@ class SettingsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.divider,
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
+          // Profile Image - No edit button here
           Container(
-            width: 60,
-            height: 60,
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: const Color(0xFF2C2C2E),
               image: profileImage != null
                   ? DecorationImage(
-                      image: AssetImage(profileImage!),
+                      image: FileImage(File(profileImage!)),
                       fit: BoxFit.cover,
                     )
                   : null,
             ),
             child: profileImage == null
-                ? Icon(
+                ? const Icon(
                     Icons.person,
-                    size: 30,
+                    size: 35,
                     color: AppColors.textSecondary,
                   )
                 : null,
@@ -49,49 +55,60 @@ class SettingsHeader extends StatelessWidget {
           
           const SizedBox(width: 16),
           
+          // User Info - Clean layout
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: const TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.email_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  email,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  phone,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.phone_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      phone,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-          
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.edit_outlined,
-              color: AppColors.textPrimary,
-              size: 18,
             ),
           ),
         ],

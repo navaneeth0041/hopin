@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
+import 'package:hopin/presentation/features/profile/edit_profile_screen.dart';
 import 'route_names.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/auth/login_screen.dart';
@@ -32,6 +33,7 @@ class AppRoutes {
       RouteNames.termsOfService: (context) => const TermsOfServiceScreen(),
       RouteNames.help: (context) => const HelpFaqScreen(),
       RouteNames.changePassword: (context) => const ChangePasswordScreen(),
+      RouteNames.editProfile: (context) => const EditProfileScreen(),
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
       RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
@@ -75,6 +77,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (context) => const HelpFaqScreen());
       case RouteNames.changePassword:
         return MaterialPageRoute(builder: (context) => const ChangePasswordScreen());
+      case RouteNames.editProfile:
+        return MaterialPageRoute(builder: (context) => const EditProfileScreen());
       case RouteNames.emergencyContact:
         return MaterialPageRoute(
           builder: (context) => const EmergencyContactScreen(),
@@ -89,7 +93,6 @@ class AppRoutes {
         );
 
       case RouteNames.tripHistory:
-      case RouteNames.editProfile:
       case RouteNames.notificationSettings:
       case RouteNames.locationSettings:
       case RouteNames.privacy:
@@ -108,7 +111,6 @@ class AppRoutes {
   static String _getScreenTitle(String routeName) {
     final titles = {
       RouteNames.tripHistory: 'Trip History',
-      RouteNames.editProfile: 'Edit Profile',
       RouteNames.notificationSettings: 'Notification Settings',
       RouteNames.locationSettings: 'Location Settings',
       RouteNames.privacy: 'Privacy & Data',

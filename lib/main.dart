@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:hopin/presentation/routes/route_names.dart';
+import 'data/providers/user_profile_provider.dart';
 import 'presentation/routes/app_routes.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   SystemChrome.setSystemUIOverlayStyle(
@@ -21,18 +23,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ride Sharing App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFC107),
-          brightness: Brightness.light,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => UserProfileProvider()..loadProfile(),
         ),
-        useMaterial3: true,
+      ],
+      child: MaterialApp(
+        title: 'HopIn - Ride Sharing',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFFFFC107),
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        ),
+        onGenerateRoute: AppRoutes.onGenerateRoute,
+        initialRoute: RouteNames.onboarding,
       ),
-      onGenerateRoute: AppRoutes.onGenerateRoute,
-      initialRoute: RouteNames.onboarding,
     );
   }
 }
