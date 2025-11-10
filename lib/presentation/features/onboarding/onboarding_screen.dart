@@ -2,36 +2,32 @@ import 'package:flutter/material.dart';
 import '../../common_widgets/custom_button.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../routes/route_names.dart';
+import 'package:lottie/lottie.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
+      backgroundColor: Colors.black, // overall black background
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/onboarding_bg.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.grey[900]!,
-                        Colors.black,
-                      ],
-                    ),
-                  ),
-                );
-              },
+          // 🎬 Very small centered Lottie Animation
+          Center(
+            child: Lottie.asset(
+              'assets/animations/onboarding(auto).json',
+              width: size.width * 0.990, // 👈 25% of screen width — very small
+              height: size.height * 0.30, // 👈 15% of screen height
+              fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
             ),
           ),
 
+          // 🖤 Optional Gradient Overlay
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -39,21 +35,22 @@ class OnboardingScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.0),
+                    Colors.black.withOpacity(0.05),
                   ],
                 ),
               ),
             ),
           ),
+
+          // 💬 Text + Button Section
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Spacer(flex: 2),
-                  
+                  const Spacer(),
                   Text(
                     AppStrings.onboardingTitle,
                     style: const TextStyle(
@@ -64,7 +61,6 @@ class OnboardingScreen extends StatelessWidget {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  
                   const SizedBox(height: 16),
                   Text(
                     AppStrings.onboardingSubtitle,
@@ -75,7 +71,6 @@ class OnboardingScreen extends StatelessWidget {
                       letterSpacing: 0.2,
                     ),
                   ),
-                  
                   const SizedBox(height: 40),
                   CustomButton(
                     text: AppStrings.continueButton,
@@ -83,7 +78,6 @@ class OnboardingScreen extends StatelessWidget {
                       Navigator.pushNamed(context, RouteNames.login);
                     },
                   ),
-                  
                   const SizedBox(height: 40),
                 ],
               ),
