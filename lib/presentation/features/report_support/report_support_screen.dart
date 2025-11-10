@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/providers/report_provider.dart';
 import '../../common_widgets/custom_buttons.dart';
 import '../../common_widgets/custom_text_field.dart';
 import 'widgets/report_category_card.dart';
@@ -21,6 +23,7 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
   String? _selectedCategory;
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  bool _isSubmitting = false;
 
   final List<_ReportCategory> _reportCategories = [
     _ReportCategory(
@@ -58,19 +61,23 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
   final List<_FAQ> _faqs = [
     _FAQ(
       question: 'How do I report a safety issue during a trip?',
-      answer: 'You can report safety issues in real-time using the SOS button on your trip screen, or after the trip through this Report & Support page.',
+      answer:
+          'You can report safety issues in real-time using the SOS button on your trip screen, or after the trip through this Report & Support page.',
     ),
     _FAQ(
       question: 'What happens after I submit a report?',
-      answer: 'Our safety team reviews all reports within 24 hours. You\'ll receive updates via email and in-app notifications.',
+      answer:
+          'Our safety team reviews all reports within 24 hours. You\'ll receive updates via email and in-app notifications.',
     ),
     _FAQ(
       question: 'How can I contact support?',
-      answer: 'You can reach us through this support form, email us at support@hopin.com, or call our helpline at 1800-XXX-XXXX.',
+      answer:
+          'You can reach us through this support form, email us at support@hopin.com, or call our helpline at 1800-XXX-XXXX.',
     ),
     _FAQ(
       question: 'Can I cancel or modify a submitted report?',
-      answer: 'Yes, you can view and update your reports in the "My Reports" section before they are reviewed.',
+      answer:
+          'Yes, you can view and update your reports in the "My Reports" section before they are reviewed.',
     ),
   ];
 
@@ -111,18 +118,18 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
                     child: Container(
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C2E),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2C2C2E),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.arrow_back_ios_new,
                         color: AppColors.textPrimary,
                         size: 20,
                       ),
                     ),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Report & Support',
                       textAlign: TextAlign.center,
@@ -133,7 +140,7 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 44), 
+                  const SizedBox(width: 44),
                 ],
               ),
             ),
@@ -205,11 +212,17 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 24),
-            PrimaryButton(
-              label: 'Submit Report',
-              onPressed: _submitReport,
-              icon: Icons.send_outlined,
-            ),
+            _isSubmitting
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryYellow,
+                    ),
+                  )
+                : PrimaryButton(
+                    label: 'Submit Report',
+                    onPressed: _submitReport,
+                    icon: Icons.send_outlined,
+                  ),
           ],
           const SizedBox(height: 32),
           _buildQuickActions(),
@@ -258,6 +271,7 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
                 icon: Icons.history,
                 label: 'My Reports',
                 onTap: () {
+                  Navigator.pushNamed(context, '/my-reports');
                 },
               ),
             ),
@@ -313,13 +327,19 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
           textCapitalization: TextCapitalization.sentences,
         ),
         const SizedBox(height: 20),
-        PrimaryButton(
-          label: 'Send Message',
-          onPressed: _submitSupport,
-          icon: Icons.send_outlined,
-        ),
+        _isSubmitting
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                ),
+              )
+            : PrimaryButton(
+                label: 'Send Message',
+                onPressed: _submitSupport,
+                icon: Icons.send_outlined,
+              ),
         const SizedBox(height: 24),
-        Row(
+        const Row(
           children: [
             Expanded(
               child: ContactMethodCard(
@@ -328,7 +348,7 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
                 value: 'support@hopin.com',
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: ContactMethodCard(
                 icon: Icons.phone_outlined,
@@ -363,7 +383,7 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
     );
   }
 
-  void _submitReport() {
+  void _submitReport() async {
     if (_descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -374,22 +394,41 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Report submitted successfully'),
-        backgroundColor: AppColors.accentGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+    setState(() => _isSubmitting = true);
+
+    final reportProvider = Provider.of<ReportProvider>(context, listen: false);
+    final result = await reportProvider.submitReport(
+      category: _selectedCategory!,
+      description: _descriptionController.text.trim(),
     );
 
-    setState(() {
-      _selectedCategory = null;
-      _descriptionController.clear();
-    });
+    setState(() => _isSubmitting = false);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      _showSuccessDialog(
+        title: 'Report Submitted',
+        message:
+            'Your report has been submitted successfully. Our team will review it within 24 hours.',
+        onClose: () {
+          setState(() {
+            _selectedCategory = null;
+            _descriptionController.clear();
+          });
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['error'] ?? 'Failed to submit report'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+    }
   }
 
-  void _submitSupport() {
+  void _submitSupport() async {
     if (_emailController.text.trim().isEmpty ||
         _descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -401,17 +440,116 @@ class _ReportSupportScreenState extends State<ReportSupportScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Support ticket created successfully'),
-        backgroundColor: AppColors.accentGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+    setState(() => _isSubmitting = true);
+
+    final reportProvider = Provider.of<ReportProvider>(context, listen: false);
+    final result = await reportProvider.submitSupportTicket(
+      email: _emailController.text.trim(),
+      description: _descriptionController.text.trim(),
+      subject: 'General Support',
     );
 
-    _emailController.clear();
-    _descriptionController.clear();
+    setState(() => _isSubmitting = false);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      _showSuccessDialog(
+        title: 'Support Ticket Created',
+        message:
+            'Your support ticket has been created successfully. We\'ll get back to you within 24 hours.',
+        onClose: () {
+          _emailController.clear();
+          _descriptionController.clear();
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['error'] ?? 'Failed to create support ticket'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+    }
+  }
+
+  void _showSuccessDialog({
+    required String title,
+    required String message,
+    required VoidCallback onClose,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.accentGreen.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                color: AppColors.accentGreen,
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  onClose();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryYellow,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

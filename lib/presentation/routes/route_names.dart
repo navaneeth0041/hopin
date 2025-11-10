@@ -37,4 +37,6 @@ class RouteNames {
   static const String createTrip = '/create-trip';
   static const String joinTrip = '/join-trip';
   static const String tripDetails = '/trip-details';
+
+  static const String myReport = '/my-reports';
 }

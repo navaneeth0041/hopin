@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
 import 'package:hopin/presentation/features/profile/edit_profile_screen.dart';
+import 'package:hopin/presentation/features/report_support/my_reports_screen.dart';
 import 'route_names.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/auth/login_screen.dart';
@@ -37,6 +38,7 @@ class AppRoutes {
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
       RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
+      RouteNames.myReport: (context) => const MyReportsScreen(),
     };
   }
 
@@ -90,6 +92,10 @@ class AppRoutes {
       case RouteNames.reportSupport:
         return MaterialPageRoute(
           builder: (context) => const ReportSupportScreen(),
+        );
+      case RouteNames.myReport:
+        return MaterialPageRoute(
+          builder: (context) => const MyReportsScreen(),
         );
 
       case RouteNames.tripHistory:

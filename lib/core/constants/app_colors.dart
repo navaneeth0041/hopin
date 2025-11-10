@@ -17,4 +17,5 @@ class AppColors {
   
   static const Color divider = Color(0xFF2C2C2C);
   static const Color shadow = Color(0x40000000);
+ static const Color accentOrange = Color(0xFFFF9500);
 }
