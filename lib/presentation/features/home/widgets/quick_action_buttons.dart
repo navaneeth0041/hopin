@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hopin/core/constants/app_colors.dart';
+// import 'package:hopin/core/constants/app_colors.dart';
 
 class QuickActionButtons extends StatelessWidget {
   const QuickActionButtons({super.key});
@@ -81,55 +81,55 @@ class QuickActionButtons extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-  final Color? backgroundColor;
+// class _ActionButton extends StatelessWidget {
+//   final IconData icon;
+//   final String label;
+//   final VoidCallback onPressed;
+//   final Color? backgroundColor;
 
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-    this.backgroundColor,
-  });
+//   const _ActionButton({
+//     required this.icon,
+//     required this.label,
+//     required this.onPressed,
+//     this.backgroundColor,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? AppColors.cardBackground;
-    final textColor = backgroundColor == AppColors.accentRed
-        ? AppColors.textPrimary
-        : AppColors.textPrimary;
-    final iconColor = backgroundColor == AppColors.accentRed
-        ? Colors.white
-        : AppColors.primaryYellow;
+//   @override
+//   Widget build(BuildContext context) {
+//     final bgColor = backgroundColor ?? AppColors.cardBackground;
+//     final textColor = backgroundColor == AppColors.accentRed
+//         ? AppColors.textPrimary
+//         : AppColors.textPrimary;
+//     final iconColor = backgroundColor == AppColors.accentRed
+//         ? Colors.white
+//         : AppColors.primaryYellow;
 
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.divider, width: 1),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: iconColor, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+//     return GestureDetector(
+//       onTap: onPressed,
+//       child: Container(
+//         height: 56,
+//         decoration: BoxDecoration(
+//           color: bgColor,
+//           borderRadius: BorderRadius.circular(14),
+//           border: Border.all(color: AppColors.divider, width: 1),
+//         ),
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             Icon(icon, color: iconColor, size: 20),
+//             const SizedBox(height: 4),
+//             Text(
+//               label,
+//               style: TextStyle(
+//                 fontSize: 11,
+//                 fontWeight: FontWeight.w600,
+//                 color: textColor,
+//               ),
+//               textAlign: TextAlign.center,
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }

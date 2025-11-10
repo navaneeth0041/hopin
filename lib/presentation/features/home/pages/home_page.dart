@@ -1,6 +1,5 @@
-// lib/features/home/pages/home_page.dart
 import 'package:flutter/material.dart';
-import 'package:hopin/presentation/features/home/widgets/nearby_trips_section.dart';
+// import 'package:hopin/presentation/features/home/widgets/nearby_trips_section.dart';
 import '../widgets/home_header.dart';
 import '../widgets/quick_action_buttons.dart';
 import '../widgets/active_trips_section.dart';
