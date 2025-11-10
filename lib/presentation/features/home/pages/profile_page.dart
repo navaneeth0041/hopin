@@ -59,7 +59,8 @@ class ProfilePage extends StatelessWidget {
                   ProfileHeader(
                     name: profile.name,
                     email: profile.email,
-                    profileImage: profile.profileImagePath,
+                    profileImagePath: profile.profileImagePath,
+                    profileImageUrl: profile.profileImageUrl,
                     completionPercentage: profileProvider.completionPercentage,
                     onEditTap: () {
                       Navigator.pushNamed(context, '/edit-profile');

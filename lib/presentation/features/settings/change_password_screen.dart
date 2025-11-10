@@ -3,6 +3,7 @@ import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/presentation/common_widgets/custom_button.dart';
 import 'package:hopin/presentation/common_widgets/custom_text_field.dart';
 import 'package:hopin/presentation/common_widgets/password_requirement_item.dart';
+import 'package:hopin/data/services/user_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -16,10 +17,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _userService = UserService();
 
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   bool _hasMinLength = false;
   bool _hasUppercase = false;
@@ -46,8 +49,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _isDifferentFromCurrent;
   }
 
-  void _changePassword() {
+  Future<void> _changePassword() async {
     if (_formKey.currentState!.validate() && _allRequirementsMet) {
+      setState(() {
+        _isLoading = true;
+      });
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -65,83 +72,125 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ),
       );
 
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pop(context);
-
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            contentPadding: const EdgeInsets.all(24),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline,
-                    color: AppColors.accentGreen,
-                    size: 36,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Password Changed!',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Your password has been changed successfully. You can now use your new password to log in.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryYellow,
-                      foregroundColor: AppColors.darkBackground,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+      try {
+        final result = await _userService.changePassword(
+          currentPassword: _currentPasswordController.text,
+          newPassword: _newPasswordController.text,
         );
-      });
+
+        if (mounted) Navigator.pop(context);
+
+        if (mounted) {
+          if (result['success']) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                backgroundColor: AppColors.cardBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                contentPadding: const EdgeInsets.all(24),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentGreen.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.accentGreen,
+                        size: 36,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Password Changed!',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Your password has been changed successfully. You can now use your new password to log in.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryYellow,
+                          foregroundColor: AppColors.darkBackground,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['error'] ?? 'Failed to change password'),
+                backgroundColor: AppColors.accentRed,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) Navigator.pop(context);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('An error occurred: ${e.toString()}'),
+              backgroundColor: AppColors.accentRed,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -408,7 +457,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
                       CustomButton(
                         text: 'Change Password',
-                        onPressed: _changePassword,
+                        onPressed: _isLoading ? () {} : _changePassword,
                       ),
                     ],
                   ),

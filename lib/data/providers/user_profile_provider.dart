@@ -1,84 +1,134 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hopin/data/services/user_service.dart';
 import '../models/user_profile.dart';
 
 class UserProfileProvider extends ChangeNotifier {
+  final UserService _userService = UserService();
+
   UserProfile _userProfile = UserProfile(
-    name: 'Laaal Singh',
-    email: 'laal_jodhil@am.amrita.edu',
-    studentId: 'AM.EN.U4CSE21001',
-    phone: '9876543210',
-    department: 'Computer Science',
-    yearOfStudy: '3rd Year',
-    emergencyContactName: 'Jane Doe',
-    emergencyContactPhone: '9876543211',
-    emergencyContactRelation: 'Mother',
+    name: '',
+    email: '',
+    phone: '',
+    studentId: '',
   );
 
-  UserProfile get userProfile => _userProfile;
-  int get completionPercentage => _userProfile.completionPercentage;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  // Initialize and load saved profile
-  Future<void> loadProfile() async {
+  UserProfile get userProfile => _userProfile;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  int get completionPercentage {
+    int score = 0;
+
+    if (_userProfile.name.isNotEmpty) score += 10;
+    if (_userProfile.email.isNotEmpty) score += 10;
+    if (_userProfile.phone.isNotEmpty) score += 10;
+    if (_userProfile.studentId.isNotEmpty) score += 10;
+
+    if (_userProfile.profileImagePath != null ||
+        _userProfile.profileImageUrl != null) {
+      score += 8;
+    }
+    if (_userProfile.gender != null && _userProfile.gender!.isNotEmpty) {
+      score += 8;
+    }
+    if (_userProfile.dateOfBirth != null &&
+        _userProfile.dateOfBirth!.isNotEmpty) {
+      score += 7;
+    }
+    if (_userProfile.department != null &&
+        _userProfile.department!.isNotEmpty) {
+      score += 7;
+    }
+    if (_userProfile.year != null && _userProfile.year!.isNotEmpty) {
+      score += 8;
+    }
+    if (_userProfile.hostel != null && _userProfile.hostel!.isNotEmpty) {
+      score += 7;
+    }
+    if (_userProfile.roomNumber != null &&
+        _userProfile.roomNumber!.isNotEmpty) {
+      score += 7;
+    }
+    if (_userProfile.hometown != null && _userProfile.hometown!.isNotEmpty) {
+      score += 8;
+    }
+
+    return score.clamp(0, 100);
+  }
+
+  Future<void> loadUserProfile(String uid) async {
+    _setLoading(true);
+    _clearError();
+
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final profileJson = prefs.getString('user_profile');
-      
-      if (profileJson != null) {
-        final Map<String, dynamic> profileData = json.decode(profileJson);
-        _userProfile = UserProfile.fromJson(profileData);
-        notifyListeners();
+      final userData = await _userService.getUserProfile(uid);
+
+      if (userData != null) {
+        _userProfile = UserProfile.fromMap(userData);
       }
     } catch (e) {
-      debugPrint('Error loading profile: $e');
+      _setError('Failed to load profile: ${e.toString()}');
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // Update profile
-  Future<void> updateProfile(UserProfile newProfile) async {
+  Future<bool> updateProfile(
+    Map<String, dynamic> updates, {
+    File? profileImage,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
     try {
-      _userProfile = newProfile;
-      
-      // Save to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final profileJson = json.encode(_userProfile.toJson());
-      await prefs.setString('user_profile', profileJson);
-      
-      notifyListeners();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        _setError('User not authenticated');
+        return false;
+      }
+
+      final success = await _userService.updateUserProfile(
+        uid,
+        updates,
+        profileImage: profileImage,
+      );
+
+      if (success) {
+        await loadUserProfile(uid);
+        return true;
+      } else {
+        _setError('Failed to update profile');
+        return false;
+      }
     } catch (e) {
-      debugPrint('Error updating profile: $e');
-      throw Exception('Failed to update profile');
+      _setError('Error updating profile: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
-  // Update profile image
-  Future<void> updateProfileImage(String? imagePath) async {
-    try {
-      _userProfile = _userProfile.copyWith(profileImagePath: imagePath);
-      
-      final prefs = await SharedPreferences.getInstance();
-      final profileJson = json.encode(_userProfile.toJson());
-      await prefs.setString('user_profile', profileJson);
-      
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error updating profile image: $e');
-      throw Exception('Failed to update profile image');
-    }
-  }
-
-  // Clear profile (logout)
   Future<void> clearProfile() async {
-    try {
-      _userProfile = UserProfile.empty();
-      
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('user_profile');
-      
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error clearing profile: $e');
-    }
+    _userProfile = UserProfile(name: '', email: '', phone: '', studentId: '');
+    notifyListeners();
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _errorMessage = null;
   }
 }

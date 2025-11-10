@@ -3,7 +3,8 @@ class EmergencyContact {
   final String name;
   final String phoneNumber;
   final String relationship;
-  bool isPrimary;
+  final bool isPrimary;
+  final DateTime createdAt;
 
   EmergencyContact({
     required this.id,
@@ -11,25 +12,30 @@ class EmergencyContact {
     required this.phoneNumber,
     required this.relationship,
     this.isPrimary = false,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'phoneNumber': phoneNumber,
       'relationship': relationship,
       'isPrimary': isPrimary,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  factory EmergencyContact.fromJson(Map<String, dynamic> json) {
+  factory EmergencyContact.fromMap(Map<String, dynamic> map) {
     return EmergencyContact(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      phoneNumber: json['phoneNumber'] as String,
-      relationship: json['relationship'] as String,
-      isPrimary: json['isPrimary'] as bool? ?? false,
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      phoneNumber: map['phoneNumber'] ?? '',
+      relationship: map['relationship'] ?? '',
+      isPrimary: map['isPrimary'] ?? false,
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
     );
   }
 
@@ -39,6 +45,7 @@ class EmergencyContact {
     String? phoneNumber,
     String? relationship,
     bool? isPrimary,
+    DateTime? createdAt,
   }) {
     return EmergencyContact(
       id: id ?? this.id,
@@ -46,32 +53,7 @@ class EmergencyContact {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       relationship: relationship ?? this.relationship,
       isPrimary: isPrimary ?? this.isPrimary,
+      createdAt: createdAt ?? this.createdAt,
     );
-  }
-
-  @override
-  String toString() {
-    return 'EmergencyContact(id: $id, name: $name, phoneNumber: $phoneNumber, relationship: $relationship, isPrimary: $isPrimary)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is EmergencyContact &&
-        other.id == id &&
-        other.name == name &&
-        other.phoneNumber == phoneNumber &&
-        other.relationship == relationship &&
-        other.isPrimary == isPrimary;
-  }
-
-  @override
-  int get hashCode {
-    return id.hashCode ^
-        name.hashCode ^
-        phoneNumber.hashCode ^
-        relationship.hashCode ^
-        isPrimary.hashCode;
   }
 }

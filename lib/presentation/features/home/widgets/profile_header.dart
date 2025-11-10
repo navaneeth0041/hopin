@@ -5,7 +5,8 @@ import 'dart:io';
 class ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
-  final String? profileImage;
+  final String? profileImagePath;
+  final String? profileImageUrl;
   final int completionPercentage;
   final VoidCallback? onEditTap;
 
@@ -13,10 +14,62 @@ class ProfileHeader extends StatelessWidget {
     super.key,
     required this.name,
     required this.email,
-    this.profileImage,
+    this.profileImagePath,
+    this.profileImageUrl,
     required this.completionPercentage,
     this.onEditTap,
   });
+
+  Widget _buildProfileImage() {
+    if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          profileImageUrl!,
+          width: 110,
+          height: 110,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                    : null,
+                color: AppColors.primaryYellow,
+                strokeWidth: 2,
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.person,
+              size: 55,
+              color: AppColors.textSecondary,
+            );
+          },
+        ),
+      );
+    } else if (profileImagePath != null && profileImagePath!.isNotEmpty) {
+      return ClipOval(
+        child: Image.file(
+          File(profileImagePath!),
+          width: 110,
+          height: 110,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.person,
+              size: 55,
+              color: AppColors.textSecondary,
+            );
+          },
+        ),
+      );
+    } else {
+      return const Icon(Icons.person, size: 55, color: AppColors.textSecondary);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,23 +93,12 @@ class ProfileHeader extends StatelessWidget {
             Container(
               width: 110,
               height: 110,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF2C2C2E),
-                image: profileImage != null
-                    ? DecorationImage(
-                        image: FileImage(File(profileImage!)),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
+                color: Color(0xFF2C2C2E),
               ),
-              child: profileImage == null
-                  ? const Icon(
-                      Icons.person,
-                      size: 55,
-                      color: AppColors.textSecondary,
-                    )
-                  : null,
+              clipBehavior: Clip.antiAlias,
+              child: _buildProfileImage(),
             ),
             Positioned(
               bottom: 0,

@@ -48,8 +48,6 @@ class AuthProvider extends ChangeNotifier {
     required String fullName,
     required String studentId,
     required String phoneNumber,
-    required String emergencyName,
-    required String emergencyPhone,
   }) async {
     _setLoading(true);
     _clearError();
@@ -62,8 +60,6 @@ class AuthProvider extends ChangeNotifier {
         'email': email,
         'studentId': studentId,
         'phoneNumber': phoneNumber,
-        'emergencyName': emergencyName,
-        'emergencyPhone': emergencyPhone,
       },
     );
 

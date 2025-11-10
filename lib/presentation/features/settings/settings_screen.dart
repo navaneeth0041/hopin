@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
+import 'package:hopin/data/providers/auth_provider.dart';
 import 'package:hopin/data/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'widgets/settings_header.dart';
@@ -16,7 +17,7 @@ class SettingsScreen extends StatelessWidget {
         child: Consumer<UserProfileProvider>(
           builder: (context, profileProvider, child) {
             final profile = profileProvider.userProfile;
-            
+
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
@@ -55,7 +56,6 @@ class SettingsScreen extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Clean settings header without edit button
                     SettingsHeader(
                       name: profile.name,
                       email: profile.email,
@@ -65,7 +65,6 @@ class SettingsScreen extends StatelessWidget {
 
                     const SizedBox(height: 32),
 
-                    // Edit Profile as first menu item
                     SettingsMenuItem(
                       icon: Icons.person_outline,
                       title: 'Edit Profile',
@@ -191,7 +190,12 @@ class SettingsScreen extends StatelessWidget {
                                     context,
                                     listen: false,
                                   ).clearProfile();
-                                  
+
+                                  await Provider.of<AuthProvider>(
+                                    context,
+                                    listen: false,
+                                  ).signOut();
+
                                   if (context.mounted) {
                                     Navigator.pushNamedAndRemoveUntil(
                                       context,

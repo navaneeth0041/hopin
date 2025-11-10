@@ -24,8 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _emergencyNameController = TextEditingController();
-  final _emergencyPhoneController = TextEditingController();
   bool _acceptTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -38,8 +36,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _emergencyNameController.dispose();
-    _emergencyPhoneController.dispose();
     super.dispose();
   }
 
@@ -101,8 +97,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         fullName: _nameController.text.trim(),
         studentId: _studentIdController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
-        emergencyName: _emergencyNameController.text.trim(),
-        emergencyPhone: _emergencyPhoneController.text.trim(),
       );
 
       if (mounted) {
@@ -392,61 +386,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     const SizedBox(height: 32),
 
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Emergency Contact',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primaryYellow.withOpacity(0.3),
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    _buildFieldLabel('Emergency Contact Name'),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      controller: _emergencyNameController,
-                      hintText: 'Jane Doe',
-                      keyboardType: TextInputType.name,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter emergency contact name';
-                        }
-                        if (value.length < 3) {
-                          return 'Name must be at least 3 characters';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    _buildFieldLabel('Emergency Contact Number'),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      controller: _emergencyPhoneController,
-                      hintText: '+91 98765 43210',
-                      keyboardType: TextInputType.phone,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(10),
-                      ],
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter emergency contact number';
-                        }
-                        if (value.length != 10) {
-                          return 'Please enter a valid 10-digit phone number';
-                        }
-                        if (value == _phoneController.text) {
-                          return 'Emergency contact should be different from your number';
-                        }
-                        return null;
-                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: AppColors.primaryYellow,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'You can add emergency contacts later from your profile',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 24),

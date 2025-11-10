@@ -23,14 +23,10 @@ class SettingsHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.divider,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.divider, width: 1),
       ),
       child: Row(
         children: [
-          // Profile Image - No edit button here
           Container(
             width: 70,
             height: 70,
@@ -52,10 +48,9 @@ class SettingsHeader extends StatelessWidget {
                   )
                 : null,
           ),
-          
+
           const SizedBox(width: 16),
-          
-          // User Info - Clean layout
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,13 +74,17 @@ class SettingsHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        email,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                      child: Tooltip(
+                        message: email,
+                        child: Text(
+                          email,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

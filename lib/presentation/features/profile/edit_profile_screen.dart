@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hopin/core/constants/app_colors.dart';
-import 'package:hopin/data/models/user_profile.dart';
 import 'package:hopin/data/providers/user_profile_provider.dart';
 import 'package:hopin/presentation/common_widgets/custom_button.dart';
 import 'package:hopin/presentation/common_widgets/custom_text_field.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:intl/intl.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -18,18 +18,27 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _studentIdController = TextEditingController();
   final _phoneController = TextEditingController();
+
   final _departmentController = TextEditingController();
   final _yearController = TextEditingController();
-  final _emergencyNameController = TextEditingController();
-  final _emergencyPhoneController = TextEditingController();
-  final _emergencyRelationController = TextEditingController();
+  final _hostelController = TextEditingController();
+  final _roomNumberController = TextEditingController();
+  final _hometownController = TextEditingController();
+  final _bioController = TextEditingController();
+
+  String? _selectedGender;
+  DateTime? _selectedDateOfBirth;
 
   File? _profileImage;
+  String? _existingImageUrl;
   final ImagePicker _picker = ImagePicker();
+  bool _imageChanged = false;
+  bool _imageRemoved = false;
 
   @override
   void initState() {
@@ -47,14 +56,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController.text = profile.email;
     _studentIdController.text = profile.studentId;
     _phoneController.text = profile.phone;
-    _departmentController.text = profile.department ?? '';
-    _yearController.text = profile.yearOfStudy ?? '';
-    _emergencyNameController.text = profile.emergencyContactName;
-    _emergencyPhoneController.text = profile.emergencyContactPhone;
-    _emergencyRelationController.text = profile.emergencyContactRelation ?? '';
 
-    if (profile.profileImagePath != null) {
+    _departmentController.text = profile.department ?? '';
+    _yearController.text = profile.year ?? '';
+    _hostelController.text = profile.hostel ?? '';
+    _roomNumberController.text = profile.roomNumber ?? '';
+    _hometownController.text = profile.hometown ?? '';
+    _bioController.text = profile.bio ?? '';
+    _selectedGender = profile.gender;
+
+    if (profile.dateOfBirth != null) {
+      try {
+        _selectedDateOfBirth = DateFormat(
+          'dd/MM/yyyy',
+        ).parse(profile.dateOfBirth!);
+      } catch (e) {
+        print('Error parsing date: $e');
+      }
+    }
+
+    if (profile.profileImageUrl != null &&
+        profile.profileImageUrl!.isNotEmpty) {
+      _existingImageUrl = profile.profileImageUrl;
+    } else if (profile.profileImagePath != null &&
+        profile.profileImagePath!.isNotEmpty) {
       _profileImage = File(profile.profileImagePath!);
+    }
+  }
+
+  Future<void> _selectDateOfBirth() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDateOfBirth ?? DateTime(2000),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primaryYellow,
+              onPrimary: Colors.black,
+              surface: AppColors.cardBackground,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDateOfBirth) {
+      setState(() {
+        _selectedDateOfBirth = picked;
+      });
     }
   }
 
@@ -102,6 +156,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 if (image != null) {
                   setState(() {
                     _profileImage = File(image.path);
+                    _imageChanged = true;
+                    _imageRemoved = false;
+                    _existingImageUrl = null;
                   });
                 }
               },
@@ -121,11 +178,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 if (image != null) {
                   setState(() {
                     _profileImage = File(image.path);
+                    _imageChanged = true;
+                    _imageRemoved = false;
+                    _existingImageUrl = null;
                   });
                 }
               },
             ),
-            if (_profileImage != null) ...[
+            if (_profileImage != null || _existingImageUrl != null) ...[
               const SizedBox(height: 12),
               _buildImageOption(
                 icon: Icons.delete_outline,
@@ -134,6 +194,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Navigator.pop(context);
                   setState(() {
                     _profileImage = null;
+                    _existingImageUrl = null;
+                    _imageChanged = true;
+                    _imageRemoved = true;
                   });
                 },
                 isDestructive: true,
@@ -197,124 +260,204 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const CircularProgressIndicator(
-              color: AppColors.primaryYellow,
+        builder: (context) => Dialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      height: 64,
+                      width: 64,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 4,
+                        color: AppColors.primaryYellow,
+                      ),
+                    ),
+                    Container(
+                      height: 44,
+                      width: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _imageChanged && _profileImage != null
+                            ? Icons.cloud_upload_rounded
+                            : Icons.sync_rounded,
+                        color: AppColors.primaryYellow,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  _imageChanged && _profileImage != null
+                      ? 'Uploading image...'
+                      : 'Updating profile...',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please wait a moment',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
         ),
       );
 
       try {
-        final updatedProfile = UserProfile(
-          name: _nameController.text,
-          email: _emailController.text,
-          studentId: _studentIdController.text,
-          phone: _phoneController.text,
-          department: _departmentController.text.isEmpty
-              ? null
-              : _departmentController.text,
-          yearOfStudy: _yearController.text.isEmpty
-              ? null
-              : _yearController.text,
-          emergencyContactName: _emergencyNameController.text,
-          emergencyContactPhone: _emergencyPhoneController.text,
-          emergencyContactRelation: _emergencyRelationController.text.isEmpty
-              ? null
-              : _emergencyRelationController.text,
-          profileImagePath: _profileImage?.path,
+        Map<String, dynamic> updates = {
+          'fullName': _nameController.text.trim(),
+          'phoneNumber': _phoneController.text.trim(),
+          'studentId': _studentIdController.text.trim(),
+          'gender': _selectedGender,
+          'dateOfBirth': _selectedDateOfBirth != null
+              ? DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!)
+              : null,
+          'department': _departmentController.text.trim().isNotEmpty
+              ? _departmentController.text.trim()
+              : null,
+          'year': _yearController.text.trim().isNotEmpty
+              ? _yearController.text.trim()
+              : null,
+          'hostel': _hostelController.text.trim().isNotEmpty
+              ? _hostelController.text.trim()
+              : null,
+          'roomNumber': _roomNumberController.text.trim().isNotEmpty
+              ? _roomNumberController.text.trim()
+              : null,
+          'hometown': _hometownController.text.trim().isNotEmpty
+              ? _hometownController.text.trim()
+              : null,
+          'bio': _bioController.text.trim().isNotEmpty
+              ? _bioController.text.trim()
+              : null,
+        };
+
+        if (_imageRemoved) {
+          updates['removeProfileImage'] = true;
+        }
+
+        final success = await profileProvider.updateProfile(
+          updates,
+          profileImage: (_imageChanged && _profileImage != null)
+              ? _profileImage
+              : null,
         );
-
-        await profileProvider.updateProfile(updatedProfile);
-
-        await Future.delayed(const Duration(seconds: 1));
 
         if (!mounted) return;
 
         Navigator.pop(context);
 
-        final completion = updatedProfile.completionPercentage;
+        if (success) {
+          final completion = profileProvider.completionPercentage;
+          // final message = profileProvider.completionMessage;
 
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: AppColors.cardBackground,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            contentPadding: const EdgeInsets.all(24),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline,
-                    color: AppColors.accentGreen,
-                    size: 36,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Profile Updated!',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Your profile is $completion% complete. ${completion < 100 ? 'Fill remaining details to reach 100%.' : 'Great job!'}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryYellow,
-                      foregroundColor: AppColors.darkBackground,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: AppColors.cardBackground,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              contentPadding: const EdgeInsets.all(24),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentGreen.withOpacity(0.2),
+                      shape: BoxShape.circle,
                     ),
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: const Icon(
+                      Icons.check_circle_outline,
+                      color: AppColors.accentGreen,
+                      size: 36,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Profile Updated!',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Your profile is $completion% complete.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryYellow,
+                        foregroundColor: AppColors.darkBackground,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                profileProvider.errorMessage ?? 'Failed to update profile',
+              ),
+              backgroundColor: AppColors.accentRed,
+            ),
+          );
+        }
       } catch (e) {
+        if (!mounted) return;
         Navigator.pop(context);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -348,7 +491,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 ]
-              : [],
+              : [
+                  const TextSpan(
+                    text: ' (optional)',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
         ),
       ),
     );
@@ -356,7 +508,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16, top: 8),
       child: Row(
         children: [
           Container(
@@ -381,6 +533,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _buildProfileImage() {
+    if (_profileImage != null) {
+      return Image.file(
+        _profileImage!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+      );
+    } else if (_existingImageUrl != null) {
+      return Image.network(
+        _existingImageUrl!,
+        fit: BoxFit.cover,
+        width: 120,
+        height: 120,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                  : null,
+              color: AppColors.primaryYellow,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(
+            Icons.person,
+            size: 60,
+            color: AppColors.textSecondary,
+          );
+        },
+      );
+    } else {
+      return const Icon(Icons.person, size: 60, color: AppColors.textSecondary);
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -389,9 +580,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.dispose();
     _departmentController.dispose();
     _yearController.dispose();
-    _emergencyNameController.dispose();
-    _emergencyPhoneController.dispose();
-    _emergencyRelationController.dispose();
+    _hostelController.dispose();
+    _roomNumberController.dispose();
+    _hometownController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -463,24 +655,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: const Color(0xFF2C2C2E),
-                                          image: _profileImage != null
-                                              ? DecorationImage(
-                                                  image: FileImage(_profileImage!),
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : null,
                                           border: Border.all(
-                                            color: AppColors.primaryYellow.withOpacity(0.3),
+                                            color: AppColors.primaryYellow
+                                                .withOpacity(0.3),
                                             width: 2,
                                           ),
                                         ),
-                                        child: _profileImage == null
-                                            ? const Icon(
-                                                Icons.person,
-                                                size: 60,
-                                                color: AppColors.textSecondary,
-                                              )
-                                            : null,
+                                        clipBehavior: Clip.antiAlias,
+                                        child: _buildProfileImage(),
                                       ),
                                     ),
                                     Positioned(
@@ -516,10 +698,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryYellow.withOpacity(0.15),
+                                    color: AppColors.primaryYellow.withOpacity(
+                                      0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: AppColors.primaryYellow.withOpacity(0.3),
+                                      color: AppColors.primaryYellow
+                                          .withOpacity(0.3),
                                       width: 1,
                                     ),
                                   ),
@@ -629,7 +814,104 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                           const SizedBox(height: 32),
 
-                          _buildSectionHeader('Academic Information'),
+                          _buildSectionHeader('Additional Details'),
+
+                          _buildFieldLabel('Gender', required: false),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2C2C2E),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.textSecondary.withOpacity(0.2),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedGender,
+                                hint: const Text(
+                                  'Select Gender',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                isExpanded: true,
+                                dropdownColor: AppColors.cardBackground,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
+                                items:
+                                    [
+                                          'Male',
+                                          'Female',
+                                          'Other',
+                                          'Prefer not to say',
+                                        ]
+                                        .map(
+                                          (gender) => DropdownMenuItem(
+                                            value: gender,
+                                            child: Text(gender),
+                                          ),
+                                        )
+                                        .toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedGender = value;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _buildFieldLabel('Date of Birth', required: false),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: _selectDateOfBirth,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2C2C2E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.textSecondary.withOpacity(
+                                    0.2,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _selectedDateOfBirth != null
+                                        ? DateFormat(
+                                            'dd/MM/yyyy',
+                                          ).format(_selectedDateOfBirth!)
+                                        : 'Select Date',
+                                    style: TextStyle(
+                                      color: _selectedDateOfBirth != null
+                                          ? AppColors.textPrimary
+                                          : AppColors.textSecondary,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.calendar_today,
+                                    color: AppColors.textSecondary,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
 
                           _buildFieldLabel('Department', required: false),
                           const SizedBox(height: 8),
@@ -637,80 +919,136 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             controller: _departmentController,
                             hintText: 'Computer Science',
                             keyboardType: TextInputType.text,
-                            onChanged: (value) => setState(() {}),
                           ),
 
                           const SizedBox(height: 20),
 
-                          _buildFieldLabel('Year of Study', required: false),
+                          _buildFieldLabel('Year', required: false),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2C2C2E),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.textSecondary.withOpacity(0.2),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _yearController.text.isEmpty
+                                    ? null
+                                    : _yearController.text,
+                                hint: const Text(
+                                  'Select Year',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                isExpanded: true,
+                                dropdownColor: AppColors.cardBackground,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
+                                items:
+                                    [
+                                          '1st Year',
+                                          '2nd Year',
+                                          '3rd Year',
+                                          '4th Year',
+                                          '5th Year',
+                                        ]
+                                        .map(
+                                          (year) => DropdownMenuItem(
+                                            value: year,
+                                            child: Text(year),
+                                          ),
+                                        )
+                                        .toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _yearController.text = value ?? '';
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _buildFieldLabel('Hostel', required: false),
                           const SizedBox(height: 8),
                           CustomTextField(
-                            controller: _yearController,
-                            hintText: '3rd Year',
+                            controller: _hostelController,
+                            hintText: 'Hostel Name',
                             keyboardType: TextInputType.text,
-                            onChanged: (value) => setState(() {}),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _buildFieldLabel('Room Number', required: false),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: _roomNumberController,
+                            hintText: '201',
+                            keyboardType: TextInputType.text,
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _buildFieldLabel('Hometown', required: false),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: _hometownController,
+                            hintText: 'City, State',
+                            keyboardType: TextInputType.text,
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _buildFieldLabel('Bio', required: false),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            controller: _bioController,
+                            hintText: 'Tell us about yourself...',
+                            keyboardType: TextInputType.multiline,
+                            maxLines: 4,
                           ),
 
                           const SizedBox(height: 32),
 
-                          _buildSectionHeader('Emergency Contact'),
-
-                          _buildFieldLabel('Emergency Contact Name'),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: _emergencyNameController,
-                            hintText: 'Jane Doe',
-                            keyboardType: TextInputType.name,
-                            onChanged: (value) => setState(() {}),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter emergency contact name';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          _buildFieldLabel('Emergency Contact Number'),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: _emergencyPhoneController,
-                            hintText: '+91 98765 43210',
-                            keyboardType: TextInputType.phone,
-                            onChanged: (value) => setState(() {}),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter emergency contact number';
-                              }
-                              if (value.length != 10) {
-                                return 'Please enter a valid 10-digit phone number';
-                              }
-                              if (value == _phoneController.text) {
-                                return 'Emergency contact should be different';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          _buildFieldLabel('Relationship', required: false),
-                          const SizedBox(height: 8),
-                          CustomTextField(
-                            controller: _emergencyRelationController,
-                            hintText: 'Mother, Father, Sibling, etc.',
-                            keyboardType: TextInputType.text,
-                            onChanged: (value) => setState(() {}),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentBlue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.accentBlue.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: AppColors.accentBlue,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Fill optional fields to complete your profile and improve your experience',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
 
                           const SizedBox(height: 40),
 
-                          // Save Button
                           CustomButton(
                             text: 'Save Changes',
                             onPressed: _saveProfile,

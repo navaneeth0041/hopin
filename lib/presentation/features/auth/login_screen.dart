@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hopin/data/providers/user_profile_provider.dart';
 import 'package:provider/provider.dart';
 import '../../common_widgets/custom_button.dart';
 import '../../common_widgets/custom_text_field.dart';
@@ -32,6 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final profileProvider = Provider.of<UserProfileProvider>(
+        context,
+        listen: false,
+      );
 
       final result = await authProvider.signIn(
         email: _emailController.text.trim(),
@@ -40,6 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         if (result['success']) {
+          final user = authProvider.user;
+          if (user != null) {
+            await profileProvider.loadUserProfile(user.uid);
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Login successful!'),

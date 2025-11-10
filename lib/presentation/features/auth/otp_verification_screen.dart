@@ -73,7 +73,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _verifyOtp() {
     String otp = _otpControllers.map((c) => c.text).join();
     if (otp.length == 6) {
-      print('Verifying OTP: $otp');
+      Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter all 6 digits of the OTP'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 

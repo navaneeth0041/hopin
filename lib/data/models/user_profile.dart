@@ -1,113 +1,125 @@
 class UserProfile {
   final String name;
   final String email;
-  final String studentId;
   final String phone;
-  final String? department;
-  final String? yearOfStudy;
-  final String emergencyContactName;
-  final String emergencyContactPhone;
-  final String? emergencyContactRelation;
+  final String studentId;
   final String? profileImagePath;
+  final String? profileImageUrl;
+
+  final String? gender;
+  final String? dateOfBirth;
+  final String? department;
+  final String? year;
+  final String? hostel;
+  final String? roomNumber;
+  final String? hometown;
+  final String? bio;
+
+  final DateTime? createdAt;
+  final DateTime? lastUpdated;
 
   UserProfile({
     required this.name,
     required this.email,
-    required this.studentId,
     required this.phone,
-    this.department,
-    this.yearOfStudy,
-    required this.emergencyContactName,
-    required this.emergencyContactPhone,
-    this.emergencyContactRelation,
+    required this.studentId,
     this.profileImagePath,
+    this.profileImageUrl,
+    this.gender,
+    this.dateOfBirth,
+    this.department,
+    this.year,
+    this.hostel,
+    this.roomNumber,
+    this.hometown,
+    this.bio,
+    this.createdAt,
+    this.lastUpdated,
   });
 
-  // Calculate profile completion percentage
-  int get completionPercentage {
-    int completedFields = 0;
-    const int totalFields = 9;
+  factory UserProfile.fromMap(Map<String, dynamic> map) {
+    final details = map['details'] as Map<String, dynamic>? ?? {};
 
-    if (name.isNotEmpty) completedFields++;
-    if (email.isNotEmpty) completedFields++;
-    if (studentId.isNotEmpty) completedFields++;
-    if (phone.isNotEmpty) completedFields++;
-    if (department != null && department!.isNotEmpty) completedFields++;
-    if (yearOfStudy != null && yearOfStudy!.isNotEmpty) completedFields++;
-    if (emergencyContactName.isNotEmpty) completedFields++;
-    if (emergencyContactPhone.isNotEmpty) completedFields++;
-    if (emergencyContactRelation != null && emergencyContactRelation!.isNotEmpty) completedFields++;
-
-    return ((completedFields / totalFields) * 100).round();
+    return UserProfile(
+      name: details['fullName'] ?? '',
+      email: details['email'] ?? '',
+      phone: details['phoneNumber'] ?? '',
+      studentId: details['studentId'] ?? '',
+      profileImagePath: details['profileImagePath'],
+      profileImageUrl: details['profileImageUrl'],
+      gender: details['gender'],
+      dateOfBirth: details['dateOfBirth'],
+      department: details['department'],
+      year: details['year'],
+      hostel: details['hostel'],
+      roomNumber: details['roomNumber'],
+      hometown: details['hometown'],
+      bio: details['bio'],
+      createdAt: details['createdAt'] != null
+          ? (details['createdAt'] as dynamic).toDate()
+          : null,
+      lastUpdated: details['lastUpdated'] != null
+          ? (details['lastUpdated'] as dynamic).toDate()
+          : null,
+    );
   }
 
-  // Copy with method for updating profile
+  Map<String, dynamic> toMap() {
+    return {
+      'details': {
+        'fullName': name,
+        'email': email,
+        'phoneNumber': phone,
+        'studentId': studentId,
+        'profileImagePath': profileImagePath,
+        'profileImageUrl': profileImageUrl,
+        'gender': gender,
+        'dateOfBirth': dateOfBirth,
+        'department': department,
+        'year': year,
+        'hostel': hostel,
+        'roomNumber': roomNumber,
+        'hometown': hometown,
+        'bio': bio,
+      },
+    };
+  }
+
   UserProfile copyWith({
     String? name,
     String? email,
-    String? studentId,
     String? phone,
-    String? department,
-    String? yearOfStudy,
-    String? emergencyContactName,
-    String? emergencyContactPhone,
-    String? emergencyContactRelation,
+    String? studentId,
     String? profileImagePath,
+    String? profileImageUrl,
+    String? gender,
+    String? dateOfBirth,
+    String? department,
+    String? year,
+    String? hostel,
+    String? roomNumber,
+    String? hometown,
+    String? bio,
+    DateTime? createdAt,
+    DateTime? lastUpdated,
   }) {
     return UserProfile(
       name: name ?? this.name,
       email: email ?? this.email,
-      studentId: studentId ?? this.studentId,
       phone: phone ?? this.phone,
-      department: department ?? this.department,
-      yearOfStudy: yearOfStudy ?? this.yearOfStudy,
-      emergencyContactName: emergencyContactName ?? this.emergencyContactName,
-      emergencyContactPhone: emergencyContactPhone ?? this.emergencyContactPhone,
-      emergencyContactRelation: emergencyContactRelation ?? this.emergencyContactRelation,
+      studentId: studentId ?? this.studentId,
       profileImagePath: profileImagePath ?? this.profileImagePath,
-    );
-  }
-
-  // Convert to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'email': email,
-      'studentId': studentId,
-      'phone': phone,
-      'department': department,
-      'yearOfStudy': yearOfStudy,
-      'emergencyContactName': emergencyContactName,
-      'emergencyContactPhone': emergencyContactPhone,
-      'emergencyContactRelation': emergencyContactRelation,
-      'profileImagePath': profileImagePath,
-    };
-  }
-
-  // Create from JSON
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      studentId: json['studentId'] ?? '',
-      phone: json['phone'] ?? '',
-      department: json['department'],
-      yearOfStudy: json['yearOfStudy'],
-      emergencyContactName: json['emergencyContactName'] ?? '',
-      emergencyContactPhone: json['emergencyContactPhone'] ?? '',
-      emergencyContactRelation: json['emergencyContactRelation'],
-      profileImagePath: json['profileImagePath'],
-    );
-  }
-
-  factory UserProfile.empty() {
-    return UserProfile(
-      name: '',
-      email: '',
-      studentId: '',
-      phone: '',
-      emergencyContactName: '',
-      emergencyContactPhone: '',
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      gender: gender ?? this.gender,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      department: department ?? this.department,
+      year: year ?? this.year,
+      hostel: hostel ?? this.hostel,
+      roomNumber: roomNumber ?? this.roomNumber,
+      hometown: hometown ?? this.hometown,
+      bio: bio ?? this.bio,
+      createdAt: createdAt ?? this.createdAt,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
