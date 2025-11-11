@@ -140,17 +140,17 @@ class ActiveRideCard extends StatelessWidget {
     final ride = RideModelMockData.getMockRides().first;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+  
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider, width: 1),
+
+        color: Colors.transparent,
+ 
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row — Avatar + Info + Details
+
           Row(
             children: [
               Container(
@@ -187,7 +187,7 @@ class ActiveRideCard extends StatelessWidget {
                 ),
               ),
 
-              // DETAILS BUTTON
+
               GestureDetector(
                 onTap: () {
                   showModalBottomSheet(
@@ -203,9 +203,14 @@ class ActiveRideCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
+
+                    color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.divider, width: 1),
+
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
                   ),
                   child: const Row(
                     children: [
@@ -232,7 +237,7 @@ class ActiveRideCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Route info
+
           Row(
             children: [
               Expanded(
@@ -285,7 +290,7 @@ class ActiveRideCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Date, time, seat
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -336,7 +341,7 @@ class ActiveRideCard extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Status chip (confirmed/pending)
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
