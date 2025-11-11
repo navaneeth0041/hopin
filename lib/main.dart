@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:hopin/data/providers/report_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hopin/presentation/routes/route_names.dart';
 import 'firebase_options.dart';
 import 'data/providers/auth_provider.dart';
 import 'data/providers/user_profile_provider.dart';
 import 'presentation/routes/app_routes.dart';
+import 'presentation/features/onboarding/onboarding_screen.dart';
+import 'presentation/features/auth/login_screen.dart';
+import 'presentation/features/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,103 +42,83 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
-      child: const AppWrapper(),
-    );
-  }
-}
-
-class AppWrapper extends StatelessWidget {
-  const AppWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isAuthenticated && authProvider.user != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final profileProvider = Provider.of<UserProfileProvider>(
-              context,
-              listen: false,
-            );
-
-            if (profileProvider.userProfile.email.isEmpty) {
-              profileProvider.loadUserProfile(authProvider.user!.uid);
-            }
-          });
-        }
-
-        return MaterialApp(
-          title: 'HopIn - Ride Sharing',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFFFFC107),
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
+      child: MaterialApp(
+        title: 'HopIn - Ride Sharing',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFFFFC107),
+            brightness: Brightness.dark,
           ),
-          home: const AuthStateHandler(),
-          onGenerateRoute: AppRoutes.onGenerateRoute,
-        );
-      },
+          useMaterial3: true,
+        ),
+        home: const AuthStateHandler(),
+        onGenerateRoute: AppRoutes.onGenerateRoute,
+      ),
     );
   }
 }
 
-class AuthStateHandler extends StatelessWidget {
+class AuthStateHandler extends StatefulWidget {
   const AuthStateHandler({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isLoading) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF121212),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFFFC107)),
-            ),
-          );
-        }
+  State<AuthStateHandler> createState() => _AuthStateHandlerState();
+}
 
-        if (authProvider.isAuthenticated &&
-            authProvider.user != null &&
-            authProvider.isEmailVerified) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushReplacementNamed(RouteNames.home);
-          });
-          return const Scaffold(
-            backgroundColor: Color(0xFF121212),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFFFC107)),
-            ),
-          );
-        }
+class _AuthStateHandlerState extends State<AuthStateHandler> {
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthAndNavigate();
+  }
 
-        if (authProvider.isAuthenticated &&
-            authProvider.user != null &&
-            !authProvider.isEmailVerified) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushReplacementNamed(RouteNames.login);
-          });
-          return const Scaffold(
-            backgroundColor: Color(0xFF121212),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFFFC107)),
-            ),
-          );
-        }
+  Future<void> _checkAuthAndNavigate() async {
+    await Future.delayed(Duration.zero);
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacementNamed(RouteNames.onboarding);
-        });
-        return const Scaffold(
-          backgroundColor: Color(0xFF121212),
-          body: Center(
-            child: CircularProgressIndicator(color: Color(0xFFFFC107)),
-          ),
+    if (!mounted) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    int attempts = 0;
+    while (!authProvider.isInitialized && attempts < 50) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
+    if (!mounted) return;
+
+    Widget targetScreen;
+
+    if (authProvider.isAuthenticated && authProvider.user != null) {
+      if (authProvider.isEmailVerified) {
+        final profileProvider = Provider.of<UserProfileProvider>(
+          context,
+          listen: false,
         );
-      },
+        if (profileProvider.userProfile.email.isEmpty) {
+          await profileProvider.loadUserProfile(authProvider.user!.uid);
+        }
+        targetScreen = const HomeScreen();
+      } else {
+        targetScreen = const LoginScreen();
+      }
+    } else {
+      targetScreen = const OnboardingScreen();
+    }
+
+    if (!mounted) return;
+
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => targetScreen));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF121212),
+      body: Center(child: CircularProgressIndicator(color: Color(0xFFFFC107))),
     );
   }
 }

@@ -8,7 +8,7 @@ class AuthProvider extends ChangeNotifier {
 
   User? _user;
   Map<String, dynamic>? _userData;
-  bool _isLoading = true;
+  bool _isLoading = false;
   String? _errorMessage;
   bool _isEmailVerified = false;
   bool _isInitialized = false;
@@ -29,19 +29,23 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _initAuthListener() {
-    _authService.authStateChanges.listen((User? user) async {
+    _user = _authService.currentUser;
+    _isEmailVerified = _user?.emailVerified ?? false;
+
+    _isInitialized = true;
+
+    if (_user != null) {
+      _loadUserData();
+    }
+
+    _authService.authStateChanges.listen((User? user) {
       _user = user;
       _isEmailVerified = user?.emailVerified ?? false;
 
       if (user != null) {
-        await _loadUserData();
+        _loadUserData();
       } else {
         _userData = null;
-      }
-
-      if (!_isInitialized) {
-        _isInitialized = true;
-        _isLoading = false;
       }
 
       notifyListeners();
@@ -160,8 +164,6 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     _setLoading(true);
-
-    await clearRememberMe();
 
     await _authService.signOut();
     _user = null;
