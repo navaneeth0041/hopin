@@ -8,12 +8,12 @@ A Flutter-based auto-sharing application for college students.
 
 **Team B6**
 
-| Name | Roll No | Role |
-|------|---------|------|
-| Aditi S | AM.SC.U4CSE23104 | QA Tester |
-| Rohit Prasanth | AM.SC.U4CSE23148 | Backend Developer |
-| Jodhil Lal | AM.SC.U4CSE23124 | Backend Developer |
-| Navaneeth B | AM.SC.U4CSE23138 | Frontend Developer |
+| Name | Roll No |
+|------|---------|
+| Aditi S | AM.SC.U4CSE23104 |
+| Rohit Prasanth | AM.SC.U4CSE23148 |
+| Jodhil Lal | AM.SC.U4CSE23124 |
+| Navaneeth B | AM.SC.U4CSE23138 |
 
 ---
 
