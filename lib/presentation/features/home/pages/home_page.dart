@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../widgets/home_header.dart';
 import '../widgets/quick_action_buttons.dart';
 import '../widgets/active_trips_section.dart';
-import 'package:lottie/lottie.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

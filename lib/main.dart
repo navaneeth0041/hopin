@@ -40,36 +40,103 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          if (authProvider.isAuthenticated && authProvider.user != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final profileProvider = Provider.of<UserProfileProvider>(
-                context,
-                listen: false,
-              );
+      child: const AppWrapper(),
+    );
+  }
+}
 
-              if (profileProvider.userProfile.email.isEmpty) {
-                profileProvider.loadUserProfile(authProvider.user!.uid);
-              }
-            });
-          }
+class AppWrapper extends StatelessWidget {
+  const AppWrapper({super.key});
 
-          return MaterialApp(
-            title: 'HopIn - Ride Sharing',
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFFFC107),
-                brightness: Brightness.dark,
-              ),
-              useMaterial3: true,
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        if (authProvider.isAuthenticated && authProvider.user != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final profileProvider = Provider.of<UserProfileProvider>(
+              context,
+              listen: false,
+            );
+
+            if (profileProvider.userProfile.email.isEmpty) {
+              profileProvider.loadUserProfile(authProvider.user!.uid);
+            }
+          });
+        }
+
+        return MaterialApp(
+          title: 'HopIn - Ride Sharing',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFFFFC107),
+              brightness: Brightness.dark,
             ),
-            onGenerateRoute: AppRoutes.onGenerateRoute,
-            initialRoute: RouteNames.onboarding,
+            useMaterial3: true,
+          ),
+          home: const AuthStateHandler(),
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+        );
+      },
+    );
+  }
+}
+
+class AuthStateHandler extends StatelessWidget {
+  const AuthStateHandler({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        if (authProvider.isLoading) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF121212),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+            ),
           );
-        },
-      ),
+        }
+
+        if (authProvider.isAuthenticated &&
+            authProvider.user != null &&
+            authProvider.isEmailVerified) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushReplacementNamed(RouteNames.home);
+          });
+          return const Scaffold(
+            backgroundColor: Color(0xFF121212),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+            ),
+          );
+        }
+
+        if (authProvider.isAuthenticated &&
+            authProvider.user != null &&
+            !authProvider.isEmailVerified) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushReplacementNamed(RouteNames.login);
+          });
+          return const Scaffold(
+            backgroundColor: Color(0xFF121212),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+            ),
+          );
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacementNamed(RouteNames.onboarding);
+        });
+        return const Scaffold(
+          backgroundColor: Color(0xFF121212),
+          body: Center(
+            child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+          ),
+        );
+      },
     );
   }
 }

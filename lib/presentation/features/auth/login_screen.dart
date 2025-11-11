@@ -24,6 +24,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadRememberMeData();
+  }
+
+  Future<void> _loadRememberMeData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final data = await authProvider.getRememberMeData();
+
+    setState(() {
+      _rememberMe = data['rememberMe'] as bool;
+      if (_rememberMe) {
+        _emailController.text = data['email'] as String;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -41,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await authProvider.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        rememberMe: _rememberMe,
       );
 
       if (mounted) {
@@ -56,6 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: AppColors.accentGreen,
             ),
           );
+
           Navigator.pushReplacementNamed(context, RouteNames.home);
         } else {
           if (result['needsVerification'] == true) {
