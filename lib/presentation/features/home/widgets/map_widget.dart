@@ -18,7 +18,7 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
   LatLng? _currentLocation;
   List<Marker> _markers = [];
   bool _loading = true;
-  double _zoomLevel = 20.0;
+  double _zoomLevel = 16.0;
 
   @override
   void initState() {
