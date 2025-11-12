@@ -4,7 +4,7 @@ class UserProfile {
   final String phone;
   final String studentId;
   final String? profileImagePath;
-  final String? profileImageUrl;
+  final String? profileImageBase64;
 
   final String? gender;
   final String? dateOfBirth;
@@ -24,7 +24,7 @@ class UserProfile {
     required this.phone,
     required this.studentId,
     this.profileImagePath,
-    this.profileImageUrl,
+    this.profileImageBase64,
     this.gender,
     this.dateOfBirth,
     this.department,
@@ -46,7 +46,7 @@ class UserProfile {
       phone: details['phoneNumber'] ?? '',
       studentId: details['studentId'] ?? '',
       profileImagePath: details['profileImagePath'],
-      profileImageUrl: details['profileImageUrl'],
+      profileImageBase64: details['profileImageBase64'],
       gender: details['gender'],
       dateOfBirth: details['dateOfBirth'],
       department: details['department'],
@@ -72,7 +72,7 @@ class UserProfile {
         'phoneNumber': phone,
         'studentId': studentId,
         'profileImagePath': profileImagePath,
-        'profileImageUrl': profileImageUrl,
+        'profileImageBase64': profileImageBase64,
         'gender': gender,
         'dateOfBirth': dateOfBirth,
         'department': department,
@@ -91,7 +91,7 @@ class UserProfile {
     String? phone,
     String? studentId,
     String? profileImagePath,
-    String? profileImageUrl,
+    String? profileImageBase64,
     String? gender,
     String? dateOfBirth,
     String? department,
@@ -109,7 +109,7 @@ class UserProfile {
       phone: phone ?? this.phone,
       studentId: studentId ?? this.studentId,
       profileImagePath: profileImagePath ?? this.profileImagePath,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      profileImageBase64: profileImageBase64 ?? this.profileImageBase64,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       department: department ?? this.department,

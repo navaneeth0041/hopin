@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
+import 'package:hopin/data/services/image_cache_service.dart';
 import 'dart:io';
 
 class ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
   final String? profileImagePath;
-  final String? profileImageUrl;
+  final String? profileImageBase64;
   final int completionPercentage;
   final VoidCallback? onEditTap;
 
@@ -15,60 +16,53 @@ class ProfileHeader extends StatelessWidget {
     required this.name,
     required this.email,
     this.profileImagePath,
-    this.profileImageUrl,
+    this.profileImageBase64,
     required this.completionPercentage,
     this.onEditTap,
   });
 
   Widget _buildProfileImage() {
-    if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
-      return ClipOval(
-        child: Image.network(
-          profileImageUrl!,
-          width: 110,
-          height: 110,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                    : null,
-                color: AppColors.primaryYellow,
-                strokeWidth: 2,
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(
-              Icons.person,
-              size: 55,
-              color: AppColors.textSecondary,
-            );
-          },
-        ),
-      );
-    } else if (profileImagePath != null && profileImagePath!.isNotEmpty) {
-      return ClipOval(
-        child: Image.file(
-          File(profileImagePath!),
-          width: 110,
-          height: 110,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(
-              Icons.person,
-              size: 55,
-              color: AppColors.textSecondary,
-            );
-          },
-        ),
-      );
-    } else {
-      return const Icon(Icons.person, size: 55, color: AppColors.textSecondary);
+    final imageCache = ImageCacheService();
+
+    if (profileImageBase64 != null && profileImageBase64!.isNotEmpty) {
+      try {
+        final image = imageCache.base64ToImage(profileImageBase64);
+        if (image != null) {
+          return ClipOval(
+            child: SizedBox(width: 110, height: 110, child: image),
+          );
+        }
+      } catch (e) {
+        print('Error displaying base64 image: $e');
+      }
     }
+
+    if (profileImagePath != null && profileImagePath!.isNotEmpty) {
+      try {
+        final file = File(profileImagePath!);
+        if (file.existsSync()) {
+          return ClipOval(
+            child: Image.file(
+              file,
+              width: 110,
+              height: 110,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholder();
+              },
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error displaying local image: $e');
+      }
+    }
+
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return const Icon(Icons.person, size: 55, color: AppColors.textSecondary);
   }
 
   @override
@@ -90,6 +84,7 @@ class ProfileHeader extends StatelessWidget {
                 ),
               ),
             ),
+
             Container(
               width: 110,
               height: 110,
@@ -100,6 +95,7 @@ class ProfileHeader extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: _buildProfileImage(),
             ),
+
             Positioned(
               bottom: 0,
               child: Container(
@@ -163,9 +159,9 @@ class ProfileHeader extends StatelessWidget {
                   width: 1,
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(
                     Icons.info_outline,
                     size: 16,
@@ -202,9 +198,9 @@ class ProfileHeader extends StatelessWidget {
                 width: 1,
               ),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Icon(Icons.verified, size: 16, color: AppColors.accentGreen),
                 SizedBox(width: 8),
                 Text(

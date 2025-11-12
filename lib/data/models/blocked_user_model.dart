@@ -4,7 +4,7 @@ class BlockedUser {
   final String uid;
   final String name;
   final String email;
-  final String? profileImageUrl;
+  final String? profileImageBase64;
   final String? department;
   final String? year;
   final String? phone;
@@ -14,7 +14,7 @@ class BlockedUser {
     required this.uid,
     required this.name,
     required this.email,
-    this.profileImageUrl,
+    this.profileImageBase64,
     this.department,
     this.year,
     this.phone,
@@ -28,7 +28,7 @@ class BlockedUser {
       uid: map['uid'] ?? '',
       name: details?['fullName'] ?? map['name'] ?? '',
       email: details?['email'] ?? map['email'] ?? '',
-      profileImageUrl: details?['profileImageUrl'] ?? map['profileImageUrl'],
+      profileImageBase64: details?['profileImageBase64'] ?? map['profileImageBase64'], // Changed field
       department: details?['department'] ?? map['department'],
       year: details?['year'] ?? map['year'],
       phone: details?['phoneNumber'] ?? map['phone'],
@@ -43,7 +43,7 @@ class BlockedUser {
       'uid': uid,
       'name': name,
       'email': email,
-      'profileImageUrl': profileImageUrl,
+      'profileImageBase64': profileImageBase64,
       'department': department,
       'year': year,
       'phone': phone,
@@ -57,7 +57,7 @@ class BlockedUser {
     String? uid,
     String? name,
     String? email,
-    String? profileImageUrl,
+    String? profileImageBase64,
     String? department,
     String? year,
     String? phone,
@@ -67,7 +67,7 @@ class BlockedUser {
       uid: uid ?? this.uid,
       name: name ?? this.name,
       email: email ?? this.email,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      profileImageBase64: profileImageBase64 ?? this.profileImageBase64,
       department: department ?? this.department,
       year: year ?? this.year,
       phone: phone ?? this.phone,
