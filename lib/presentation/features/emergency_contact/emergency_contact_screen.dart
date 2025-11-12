@@ -687,7 +687,109 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
         ),
       ),
     );
+    void _showCustomSnackBar(String message, Color color, IconData icon) {
+      if (!mounted) return;
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          content: Row(
+            children: [
+              Icon(icon, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // try {
+    //   final user = FirebaseAuth.instance.currentUser;
+    //   final userName = user?.displayName ?? 'HopIn User';
+
+    //   final contactsList = emergencyContacts
+    //       .map(
+    //         (c) => {
+    //           'name': c.name,
+    //           'phoneNumber': c.phoneNumber,
+    //           'relationship': c.relationship,
+    //         },
+    //       )
+    //       .toList();
+
+    //   final result = await sosService.triggerSOS(
+    //     userName: userName,
+    //     emergencyContacts: contactsList,
+    //     includeLocation: autoShareLocation,
+    //   );
+
+    //   Navigator.pop(context);
+
+    //     if (result['success']) {
+    //       if (mounted) {
+    //         ScaffoldMessenger.of(context).showSnackBar(
+    //           SnackBar(
+    //             content: Column(
+    //               mainAxisSize: MainAxisSize.min,
+    //               crossAxisAlignment: CrossAxisAlignment.start,
+    //               children: [
+    //                 const Text(
+    //                   '🚨 SOS Alert Sent Successfully!',
+    //                   style: TextStyle(fontWeight: FontWeight.bold),
+    //                 ),
+    //                 const SizedBox(height: 4),
+    //                 Text(
+    //                   '${result['contactsNotified']} contacts notified',
+    //                   style: const TextStyle(fontSize: 12),
+    //                 ),
+    //                 if (result['location'] != null)
+    //                   const Text(
+    //                     'Location shared with contacts',
+    //                     style: TextStyle(fontSize: 12),
+    //                   ),
+    //               ],
+    //             ),
+    //             backgroundColor: AppColors.accentRed,
+    //             behavior: SnackBarBehavior.floating,
+    //             duration: const Duration(seconds: 5),
+    //           ),
+    //         );
+    //       }
+    //     } else {
+    //       if (mounted) {
+    //         ScaffoldMessenger.of(context).showSnackBar(
+    //           SnackBar(
+    //             content: Text('SOS failed: ${result['error']}'),
+    //             backgroundColor: AppColors.accentRed,
+    //             behavior: SnackBarBehavior.floating,
+    //             duration: const Duration(seconds: 5),
+    //           ),
+    //         );
+    //       }
+    //     }
+    //   } catch (e) {
+    //     Navigator.pop(context);
+    //     if (mounted) {
+    //       ScaffoldMessenger.of(context).showSnackBar(
+    //         SnackBar(
+    //           content: Text('Error: $e'),
+    //           backgroundColor: AppColors.accentRed,
+    //           behavior: SnackBarBehavior.floating,
+    //         ),
+    //       );
+    //     }
+    //   } finally {
+    //     setState(() => _sosTriggering = false);
+    //   }
+    // }
     try {
       final user = FirebaseAuth.instance.currentUser;
       final userName = user?.displayName ?? 'HopIn User';
@@ -711,58 +813,25 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
       Navigator.pop(context);
 
       if (result['success']) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '🚨 SOS Alert Sent Successfully!',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${result['contactsNotified']} contacts notified',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  if (result['location'] != null)
-                    const Text(
-                      'Location shared with contacts',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                ],
-              ),
-              backgroundColor: AppColors.accentRed,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
+        _showCustomSnackBar(
+          '🚨 SOS Alert Sent Successfully! ${result['contactsNotified']} contacts notified${result['location'] != null ? ' (Location shared)' : ''}',
+          AppColors.accentRed,
+          Icons.warning_amber_rounded,
+        );
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('SOS failed: ${result['error']}'),
-              backgroundColor: AppColors.accentRed,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
+        _showCustomSnackBar(
+          'SOS failed: ${result['error']}',
+          AppColors.accentRed,
+          Icons.error_outline,
+        );
       }
     } catch (e) {
       Navigator.pop(context);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.accentRed,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      _showCustomSnackBar(
+        'Error: $e',
+        AppColors.accentRed,
+        Icons.error_outline,
+      );
     } finally {
       setState(() => _sosTriggering = false);
     }
