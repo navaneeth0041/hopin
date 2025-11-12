@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hopin/data/providers/blocked_users_provider.dart';
 import 'package:hopin/data/providers/report_provider.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
 import 'package:provider/provider.dart';
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProfileProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(create: (_) => TripProvider()),
+        ChangeNotifierProvider(create: (_) => BlockedUsersProvider()),
       ],
       child: MaterialApp(
         title: 'HopIn - Ride Sharing',
