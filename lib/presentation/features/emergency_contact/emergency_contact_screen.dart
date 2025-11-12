@@ -568,64 +568,122 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
 
     setState(() => _sosTriggering = true);
 
+    // showDialog(
+    //   context: context,
+    //   barrierDismissible: false,
+    //   builder: (context) => AlertDialog(
+    //     backgroundColor: const Color(0xFF2C2C2E),
+    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    //     title: Row(
+    //       children: [
+    //         Container(
+    //           padding: const EdgeInsets.all(8),
+    //           decoration: BoxDecoration(
+    //             color: AppColors.accentRed.withOpacity(0.15),
+    //             borderRadius: BorderRadius.circular(10),
+    //           ),
+    //           child: Icon(
+    //             Icons.warning_amber_rounded,
+    //             color: AppColors.accentRed,
+    //             size: 34,
+    //           ),
+    //         ),
+    //         const SizedBox(width: 12),
+    //         Text(
+    //           'Sending SOS Alert',
+    //           style: TextStyle(
+    //             color: AppColors.textPrimary,
+    //             fontSize: 18,
+    //             fontWeight: FontWeight.bold,
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //     content: Row(
+    //       children: [
+    //         SizedBox(
+    //           width: 18,
+    //           height: 18,
+    //           child: CircularProgressIndicator(
+    //             color: AppColors.accentRed,
+    //             strokeWidth: 4.5,
+    //           ),
+    //         ),
+    //         const SizedBox(width: 17),
+    //         Expanded(
+    //           child: Text(
+    //             'Notifying emergency contacts...',
+    //             style: TextStyle(
+    //               color: AppColors.textSecondary,
+    //               fontSize: 16,
+    //               height: 1.4,
+    //             ),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    // );
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black87,
-      builder: (context) => Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 48),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TweenAnimationBuilder(
-                tween: Tween<double>(begin: 0.8, end: 1.2),
-                duration: const Duration(milliseconds: 800),
-                builder: (context, double scale, child) {
-                  return Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentRed.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.emergency,
-                        color: AppColors.accentRed,
-                        size: 48,
-                      ),
-                    ),
-                  );
-                },
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.accentRed.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(15),
               ),
-              const SizedBox(height: 24),
-              CircularProgressIndicator(
+              child: Icon(
+                Icons.warning_amber_rounded,
                 color: AppColors.accentRed,
-                strokeWidth: 3,
+                size: 40,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Sending SOS Alert',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
+              'Sending SOS Alert',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Notifying emergency contacts...',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Notifying emergency contacts...',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 15,
+                height: 1.4,
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 20),
+
+            //  Circular Progress Indicator
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                color: AppColors.accentRed,
+                strokeWidth: 3.0,
+              ),
+            ),
+          ],
         ),
       ),
     );
