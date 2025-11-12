@@ -6,6 +6,7 @@ import 'package:hopin/data/models/home/emergency_contact_model.dart';
 import 'package:hopin/data/services/user_service.dart';
 import 'widgets/emergency_contact_card.dart';
 import 'widgets/add_contact_bottom_sheet.dart';
+import 'package:hopin/data/services/sos_service.dart';
 
 class EmergencyContactScreen extends StatefulWidget {
   const EmergencyContactScreen({super.key});
@@ -16,16 +17,69 @@ class EmergencyContactScreen extends StatefulWidget {
 
 class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
   final UserService _userService = UserService();
+  final SosService sosService = SosService();
+
   List<EmergencyContact> emergencyContacts = [];
   bool sosEnabled = true;
   bool autoShareLocation = true;
   bool _isLoading = true;
   bool _settingsLoading = false;
+  bool _sosTriggering = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    final hasPermissions = await sosService.checkPermissions();
+    if (!hasPermissions) {
+      showPermissionDialog();
+    }
+  }
+
+  void showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2E),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.primaryYellow),
+            const SizedBox(width: 12),
+            Text(
+              'Permissions Required',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+          ],
+        ),
+        content: Text(
+          'HopIn needs SMS, Call, and Location permissions to enable SOS features. Please grant these permissions to use emergency alerts.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Later',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await sosService.requestPermissions();
+            },
+            child: Text(
+              'Grant Permissions',
+              style: TextStyle(color: AppColors.primaryYellow),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -36,7 +90,6 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
 
     try {
       final contacts = await _userService.getEmergencyContacts(uid);
-
       final settings = await _userService.getSosSettings(uid);
 
       setState(() {
@@ -387,7 +440,35 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
     );
   }
 
-  void _triggerSOS() {
+  Future<void> _makeQuickCall(EmergencyContact contact) async {
+    try {
+      final success = await sosService.makeCall(contact.phoneNumber);
+
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Failed to make call. Please check permissions.',
+            ),
+            backgroundColor: AppColors.accentRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.accentRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _triggerSOS() async {
     if (!sosEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -414,50 +495,219 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2C2C2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.accentRed),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.accentRed.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.accentRed,
+                size: 24,
+              ),
+            ),
             const SizedBox(width: 12),
-            Text('Trigger SOS', style: TextStyle(color: AppColors.textPrimary)),
+            Text(
+              'Trigger SOS',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         content: Text(
           'This will immediately alert your emergency contacts${autoShareLocation ? ' with your current location' : ''}. Are you sure?',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
             child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
             ),
           ),
-          TextButton(
-            onPressed: () {
+          ElevatedButton(
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    '🚨 SOS Alert Sent! Your emergency contacts have been notified.',
-                  ),
-                  backgroundColor: AppColors.accentRed,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+              await _executeSOS();
             },
-            child: Text(
-              'Send Alert',
-              style: TextStyle(
-                color: AppColors.accentRed,
-                fontWeight: FontWeight.bold,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentRed,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
+            ),
+            child: const Text(
+              'Send Alert',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _executeSOS() async {
+    if (_sosTriggering) return;
+
+    setState(() => _sosTriggering = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (context) => Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 48),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TweenAnimationBuilder(
+                tween: Tween<double>(begin: 0.8, end: 1.2),
+                duration: const Duration(milliseconds: 800),
+                builder: (context, double scale, child) {
+                  return Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentRed.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.emergency,
+                        color: AppColors.accentRed,
+                        size: 48,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              CircularProgressIndicator(
+                color: AppColors.accentRed,
+                strokeWidth: 3,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Sending SOS Alert',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Notifying emergency contacts...',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final userName = user?.displayName ?? 'HopIn User';
+
+      final contactsList = emergencyContacts
+          .map(
+            (c) => {
+              'name': c.name,
+              'phoneNumber': c.phoneNumber,
+              'relationship': c.relationship,
+            },
+          )
+          .toList();
+
+      final result = await sosService.triggerSOS(
+        userName: userName,
+        emergencyContacts: contactsList,
+        includeLocation: autoShareLocation,
+      );
+
+      Navigator.pop(context);
+
+      if (result['success']) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '🚨 SOS Alert Sent Successfully!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${result['contactsNotified']} contacts notified',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  if (result['location'] != null)
+                    const Text(
+                      'Location shared with contacts',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                ],
+              ),
+              backgroundColor: AppColors.accentRed,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('SOS failed: ${result['error']}'),
+              backgroundColor: AppColors.accentRed,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.accentRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _sosTriggering = false);
+    }
   }
 
   @override
@@ -508,7 +758,9 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      onPressed: sosEnabled ? _triggerSOS : null,
+                      onPressed: sosEnabled && !_sosTriggering
+                          ? _triggerSOS
+                          : null,
                       icon: Icon(
                         Icons.emergency,
                         color: sosEnabled
@@ -636,9 +888,7 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
                                   onChanged: _settingsLoading
                                       ? null
                                       : (value) {
-                                          setState(() {
-                                            sosEnabled = value;
-                                          });
+                                          setState(() => sosEnabled = value);
                                           _updateSosSettings();
                                         },
                                   activeColor: AppColors.primaryYellow,
@@ -700,9 +950,9 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
                                   onChanged: _settingsLoading
                                       ? null
                                       : (value) {
-                                          setState(() {
-                                            autoShareLocation = value;
-                                          });
+                                          setState(
+                                            () => autoShareLocation = value,
+                                          );
                                           _updateSosSettings();
                                         },
                                   activeColor: AppColors.primaryYellow,
@@ -780,6 +1030,7 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
                                   onDelete: () => _deleteContact(contact.id),
                                   onSetPrimary: () =>
                                       _setPrimaryContact(contact.id),
+                                  onQuickCall: () => _makeQuickCall(contact),
                                 ),
                               );
                             }).toList(),

@@ -6,12 +6,14 @@ class EmergencyContactCard extends StatelessWidget {
   final EmergencyContact contact;
   final VoidCallback onDelete;
   final VoidCallback onSetPrimary;
+  final VoidCallback onQuickCall;
 
   const EmergencyContactCard({
     super.key,
     required this.contact,
     required this.onDelete,
     required this.onSetPrimary,
+    required this.onQuickCall,
   });
 
   @override
@@ -166,27 +168,32 @@ class EmergencyContactCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.call, color: AppColors.accentGreen, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Quick Call',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+
+          InkWell(
+            onTap: onQuickCall,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.call, color: AppColors.accentGreen, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Quick Call',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

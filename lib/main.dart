@@ -4,6 +4,7 @@ import 'package:hopin/data/providers/report_provider.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
 import 'data/providers/auth_provider.dart';
 import 'data/providers/user_profile_provider.dart';
@@ -29,7 +30,20 @@ void main() async {
     ),
   );
 
+  await _requestInitialPermissions();
+
   runApp(const MyApp());
+}
+
+Future<void> _requestInitialPermissions() async {
+  try {
+    await Permission.location.request();
+
+    await Permission.sms.request();
+    await Permission.phone.request();
+  } catch (e) {
+    return;
+  }
 }
 
 class MyApp extends StatelessWidget {
