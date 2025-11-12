@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/providers/blocked_users_provider.dart';
 import 'package:hopin/data/models/blocked_user_model.dart';
+import 'package:hopin/data/services/image_cache_service.dart';
 import 'package:provider/provider.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class BlockedUsersScreen extends StatefulWidget {
 
 class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ImageCacheService _imageCache = ImageCacheService();
   bool _showAllUsers = false;
 
   @override
@@ -35,6 +37,39 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildProfileAvatar(BlockedUser user, {double radius = 28}) {
+    if (user.profileImageBase64 != null &&
+        user.profileImageBase64!.isNotEmpty) {
+      try {
+        final image = _imageCache.getCachedImage(
+          user.uid,
+          user.profileImageBase64,
+        );
+        if (image != null) {
+          return CircleAvatar(
+            radius: radius,
+            backgroundColor: const Color(0xFF2C2C2E),
+            child: ClipOval(
+              child: SizedBox(
+                width: radius * 2,
+                height: radius * 2,
+                child: image,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error displaying base64 image: $e');
+      }
+    }
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFF2C2C2E),
+      child: Icon(Icons.person, color: AppColors.textSecondary, size: radius),
+    );
   }
 
   @override
@@ -261,20 +296,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
           children: [
             Stack(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: const Color(0xFF2C2C2E),
-                  backgroundImage: user.profileImageUrl != null
-                      ? NetworkImage(user.profileImageUrl!)
-                      : null,
-                  child: user.profileImageUrl == null
-                      ? const Icon(
-                          Icons.person,
-                          color: AppColors.textSecondary,
-                          size: 28,
-                        )
-                      : null,
-                ),
+                _buildProfileAvatar(user),
                 if (isBlocked)
                   Positioned(
                     right: 0,
@@ -378,12 +400,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  child: const Text(
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Text(
                     'User Details',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -400,20 +419,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor: const Color(0xFF2C2C2E),
-                          backgroundImage: user.profileImageUrl != null
-                              ? NetworkImage(user.profileImageUrl!)
-                              : null,
-                          child: user.profileImageUrl == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: AppColors.textSecondary,
-                                )
-                              : null,
-                        ),
+                        _buildProfileAvatar(user, radius: 50),
                         const SizedBox(height: 16),
                         Text(
                           user.name,

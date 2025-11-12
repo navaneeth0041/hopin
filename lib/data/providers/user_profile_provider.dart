@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hopin/data/services/image_cache_service.dart';
 import 'package:hopin/data/services/user_service.dart';
 import '../models/user_profile.dart';
 
 class UserProfileProvider extends ChangeNotifier {
   final UserService _userService = UserService();
+  final ImageCacheService _imageCache = ImageCacheService();
 
   UserProfile _userProfile = UserProfile(
     name: '',
@@ -29,8 +31,8 @@ class UserProfileProvider extends ChangeNotifier {
     if (_userProfile.phone.isNotEmpty) score += 10;
     if (_userProfile.studentId.isNotEmpty) score += 10;
 
-    if (_userProfile.profileImagePath != null ||
-        _userProfile.profileImageUrl != null) {
+    if (_userProfile.profileImageBase64 != null ||
+        _userProfile.profileImagePath != null) {
       score += 8;
     }
     if (_userProfile.gender != null && _userProfile.gender!.isNotEmpty) {
@@ -55,6 +57,9 @@ class UserProfileProvider extends ChangeNotifier {
       score += 7;
     }
     if (_userProfile.hometown != null && _userProfile.hometown!.isNotEmpty) {
+      score += 8;
+    }
+    if (_userProfile.bio != null && _userProfile.bio!.isNotEmpty) {
       score += 8;
     }
 
@@ -114,6 +119,10 @@ class UserProfileProvider extends ChangeNotifier {
   }
 
   Future<void> clearProfile() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      _imageCache.clearUserCache(uid);
+    }
     _userProfile = UserProfile(name: '', email: '', phone: '', studentId: '');
     notifyListeners();
   }

@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:hopin/data/models/home/emergency_contact_model.dart';
+import 'package:hopin/data/services/image_cache_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ImageCacheService _imageCache = ImageCacheService();
 
   Future<Map<String, dynamic>> addEmergencyContact(
     String uid,
@@ -40,7 +40,6 @@ class UserService {
 
       return {'success': true, 'contact': newContact};
     } catch (e) {
-      print('Error adding emergency contact: $e');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -58,7 +57,6 @@ class UserService {
           .map((doc) => EmergencyContact.fromMap(doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching emergency contacts: $e');
       return [];
     }
   }
@@ -76,7 +74,6 @@ class UserService {
       if (snapshot.docs.isEmpty) return null;
       return EmergencyContact.fromMap(snapshot.docs.first.data());
     } catch (e) {
-      print('Error fetching primary contact: $e');
       return null;
     }
   }
@@ -94,7 +91,6 @@ class UserService {
           .update(contact.toMap());
       return true;
     } catch (e) {
-      print('Error updating emergency contact: $e');
       return false;
     }
   }
@@ -102,7 +98,6 @@ class UserService {
   Future<bool> setPrimaryContact(String uid, String contactId) async {
     try {
       final contacts = await getEmergencyContacts(uid);
-
       final batch = _firestore.batch();
 
       for (var contact in contacts) {
@@ -111,14 +106,12 @@ class UserService {
             .doc(uid)
             .collection('emergencyContacts')
             .doc(contact.id);
-
         batch.update(docRef, {'isPrimary': contact.id == contactId});
       }
 
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error setting primary contact: $e');
       return false;
     }
   }
@@ -152,7 +145,6 @@ class UserService {
 
       return true;
     } catch (e) {
-      print('Error deleting emergency contact: $e');
       return false;
     }
   }
@@ -170,7 +162,6 @@ class UserService {
           .doc(uid)
           .collection('emergencyContacts')
           .doc(contact.id);
-
       batch.update(docRef, {'isPrimary': isPrimary});
     }
 
@@ -192,7 +183,6 @@ class UserService {
 
       return {'sosEnabled': true, 'autoShareLocation': true};
     } catch (e) {
-      print('Error fetching SOS settings: $e');
       return {'sosEnabled': true, 'autoShareLocation': true};
     }
   }
@@ -216,7 +206,6 @@ class UserService {
 
       return true;
     } catch (e) {
-      print('Error updating SOS settings: $e');
       return false;
     }
   }
@@ -229,41 +218,29 @@ class UserService {
       }
       return null;
     } catch (e) {
-      print('Error fetching user profile: $e');
       return null;
     }
   }
 
-  Future<String?> uploadProfileImage(String uid, File imageFile) async {
+  Future<String?> storeProfileImageAsBase64(String uid, File imageFile) async {
     try {
-      final ref = _storage.ref().child('profile_images').child('$uid.jpg');
+      final base64String = await _imageCache.imageToBase64(imageFile);
+      if (base64String == null) return null;
 
-      final uploadTask = await ref.putFile(
-        imageFile,
-        SettableMetadata(
-          contentType: 'image/jpeg',
-          customMetadata: {
-            'uploaded-by': uid,
-            'uploaded-at': DateTime.now().toIso8601String(),
-          },
-        ),
-      );
+      await _imageCache.saveToLocalFile(base64String, uid);
 
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
-      return downloadUrl;
+      return base64String;
     } catch (e) {
-      print('Error uploading profile image: $e');
       return null;
     }
   }
 
-  Future<bool> deleteProfileImage(String uid) async {
+  Future<bool> deleteProfileImageBase64(String uid) async {
     try {
-      final ref = _storage.ref().child('profile_images').child('$uid.jpg');
-      await ref.delete();
+      _imageCache.clearUserCache(uid);
+      await _imageCache.deleteLocalFile(uid);
       return true;
     } catch (e) {
-      print('Error deleting profile image: $e');
       return false;
     }
   }
@@ -277,17 +254,17 @@ class UserService {
       Map<String, dynamic> updateData = {};
 
       if (profileImage != null) {
-        final imageUrl = await uploadProfileImage(uid, profileImage);
-        if (imageUrl != null) {
-          updateData['details.profileImageUrl'] = imageUrl;
+        final base64String = await storeProfileImageAsBase64(uid, profileImage);
+        if (base64String != null) {
+          updateData['details.profileImageBase64'] = base64String;
           updateData['details.profileImagePath'] = profileImage.path;
         }
       }
 
       if (updates.containsKey('removeProfileImage') &&
           updates['removeProfileImage'] == true) {
-        await deleteProfileImage(uid);
-        updateData['details.profileImageUrl'] = FieldValue.delete();
+        await deleteProfileImageBase64(uid);
+        updateData['details.profileImageBase64'] = FieldValue.delete();
         updateData['details.profileImagePath'] = FieldValue.delete();
       }
 
@@ -301,75 +278,25 @@ class UserService {
         updateData['details.studentId'] = updates['studentId'];
       }
 
-      if (updates.containsKey('gender')) {
-        if (updates['gender'] != null) {
-          updateData['details.gender'] = updates['gender'];
-        } else {
-          updateData['details.gender'] = FieldValue.delete();
-        }
-      }
+      final optionalFields = [
+        'gender',
+        'dateOfBirth',
+        'department',
+        'year',
+        'hostel',
+        'roomNumber',
+        'hometown',
+        'bio',
+      ];
 
-      if (updates.containsKey('dateOfBirth')) {
-        if (updates['dateOfBirth'] != null) {
-          updateData['details.dateOfBirth'] = updates['dateOfBirth'];
-        } else {
-          updateData['details.dateOfBirth'] = FieldValue.delete();
+      for (var field in optionalFields) {
+        if (updates.containsKey(field)) {
+          if (updates[field] != null) {
+            updateData['details.$field'] = updates[field];
+          } else {
+            updateData['details.$field'] = FieldValue.delete();
+          }
         }
-      }
-
-      if (updates.containsKey('department')) {
-        if (updates['department'] != null) {
-          updateData['details.department'] = updates['department'];
-        } else {
-          updateData['details.department'] = FieldValue.delete();
-        }
-      }
-
-      if (updates.containsKey('year')) {
-        if (updates['year'] != null) {
-          updateData['details.year'] = updates['year'];
-        } else {
-          updateData['details.year'] = FieldValue.delete();
-        }
-      }
-
-      if (updates.containsKey('hostel')) {
-        if (updates['hostel'] != null) {
-          updateData['details.hostel'] = updates['hostel'];
-        } else {
-          updateData['details.hostel'] = FieldValue.delete();
-        }
-      }
-
-      if (updates.containsKey('roomNumber')) {
-        if (updates['roomNumber'] != null) {
-          updateData['details.roomNumber'] = updates['roomNumber'];
-        } else {
-          updateData['details.roomNumber'] = FieldValue.delete();
-        }
-      }
-
-      if (updates.containsKey('hometown')) {
-        if (updates['hometown'] != null) {
-          updateData['details.hometown'] = updates['hometown'];
-        } else {
-          updateData['details.hometown'] = FieldValue.delete();
-        }
-      }
-
-      if (updates.containsKey('bio')) {
-        if (updates['bio'] != null) {
-          updateData['details.bio'] = updates['bio'];
-        } else {
-          updateData['details.bio'] = FieldValue.delete();
-        }
-      }
-
-      if (updates.containsKey('profileImagePath') && profileImage == null) {
-        updateData['details.profileImagePath'] = updates['profileImagePath'];
-      }
-      if (updates.containsKey('profileImageUrl') && profileImage == null) {
-        updateData['details.profileImageUrl'] = updates['profileImageUrl'];
       }
 
       updateData['details.lastUpdated'] = FieldValue.serverTimestamp();
@@ -380,7 +307,6 @@ class UserService {
 
       return true;
     } catch (e) {
-      print('Error updating user profile: $e');
       return false;
     }
   }
@@ -434,15 +360,5 @@ class UserService {
 
   bool isUserAuthenticated() {
     return _auth.currentUser != null;
-  }
-
-  Future<String?> getProfileImageUrl(String uid) async {
-    try {
-      final ref = _storage.ref().child('profile_images').child('$uid.jpg');
-      return await ref.getDownloadURL();
-    } catch (e) {
-      print('Error getting profile image URL: $e');
-      return null;
-    }
   }
 }
