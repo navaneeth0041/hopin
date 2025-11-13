@@ -40,6 +40,12 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   }
 
   Widget _buildProfileAvatar(BlockedUser user, {double radius = 28}) {
+    // Check if profile picture should be shown based on privacy settings
+    if (user.privacySettings != null &&
+        !user.privacySettings!.showProfilePicture) {
+      return _buildDefaultAvatar(radius);
+    }
+
     if (user.profileImageBase64 != null &&
         user.profileImageBase64!.isNotEmpty) {
       try {
@@ -65,6 +71,10 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       }
     }
 
+    return _buildDefaultAvatar(radius);
+  }
+
+  Widget _buildDefaultAvatar(double radius) {
     return CircleAvatar(
       radius: radius,
       backgroundColor: const Color(0xFF2C2C2E),
@@ -370,6 +380,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     BlockedUsersProvider provider,
   ) {
     final isBlocked = provider.isUserBlocked(user.uid);
+    final privacy = user.privacySettings;
 
     showModalBottomSheet(
       context: context,
@@ -449,25 +460,20 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        if (user.department != null || user.year != null)
+                        if (_hasVisibleAcademicInfo(user, privacy))
                           _buildDetailSection(
                             title: 'Academic Information',
                             icon: Icons.school_outlined,
-                            children: [
-                              if (user.department != null)
-                                _buildDetailRow(
-                                  icon: Icons.business_outlined,
-                                  label: 'Department',
-                                  value: user.department!,
-                                ),
-                              if (user.year != null)
-                                _buildDetailRow(
-                                  icon: Icons.calendar_today_outlined,
-                                  label: 'Year',
-                                  value: user.year!,
-                                ),
-                            ],
+                            children: _buildAcademicInfoRows(user, privacy),
                           ),
+                        if (_hasVisiblePersonalInfo(user, privacy)) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailSection(
+                            title: 'Personal Information',
+                            icon: Icons.person_outline,
+                            children: _buildPersonalInfoRows(user, privacy),
+                          ),
+                        ],
                         const SizedBox(height: 32),
                         SizedBox(
                           width: double.infinity,
@@ -527,6 +533,110 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         ),
       ),
     );
+  }
+
+  bool _hasVisibleAcademicInfo(BlockedUser user, dynamic privacy) {
+    if (privacy == null) return user.department != null || user.year != null;
+
+    return (user.department != null && privacy.showDepartment) ||
+        (user.year != null && privacy.showYear);
+  }
+
+  bool _hasVisiblePersonalInfo(BlockedUser user, dynamic privacy) {
+    if (privacy == null) {
+      return user.gender != null ||
+          user.dateOfBirth != null ||
+          user.hostel != null ||
+          user.roomNumber != null ||
+          user.hometown != null ||
+          user.bio != null;
+    }
+
+    return (user.gender != null && privacy.showGender) ||
+        (user.dateOfBirth != null && privacy.showDateOfBirth) ||
+        (user.hostel != null && privacy.showHostel) ||
+        (user.roomNumber != null && privacy.showRoomNumber) ||
+        (user.hometown != null && privacy.showHometown) ||
+        (user.bio != null && privacy.showBio);
+  }
+
+  List<Widget> _buildAcademicInfoRows(BlockedUser user, dynamic privacy) {
+    List<Widget> rows = [];
+
+    if (user.department != null &&
+        (privacy == null || privacy.showDepartment)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.business_outlined,
+        label: 'Department',
+        value: user.department!,
+      ));
+    }
+
+    if (user.year != null && (privacy == null || privacy.showYear)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.calendar_today_outlined,
+        label: 'Year',
+        value: user.year!,
+      ));
+    }
+
+    return rows;
+  }
+
+  List<Widget> _buildPersonalInfoRows(BlockedUser user, dynamic privacy) {
+    List<Widget> rows = [];
+
+    if (user.gender != null && (privacy == null || privacy.showGender)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.wc_outlined,
+        label: 'Gender',
+        value: user.gender!,
+      ));
+    }
+
+    if (user.dateOfBirth != null &&
+        (privacy == null || privacy.showDateOfBirth)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.cake_outlined,
+        label: 'Date of Birth',
+        value: user.dateOfBirth!,
+      ));
+    }
+
+    if (user.hostel != null && (privacy == null || privacy.showHostel)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.home_outlined,
+        label: 'Hostel',
+        value: user.hostel!,
+      ));
+    }
+
+    if (user.roomNumber != null &&
+        (privacy == null || privacy.showRoomNumber)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.meeting_room_outlined,
+        label: 'Room Number',
+        value: user.roomNumber!,
+      ));
+    }
+
+    if (user.hometown != null && (privacy == null || privacy.showHometown)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.location_city_outlined,
+        label: 'Hometown',
+        value: user.hometown!,
+      ));
+    }
+
+    if (user.bio != null && (privacy == null || privacy.showBio)) {
+      rows.add(_buildDetailRow(
+        icon: Icons.description_outlined,
+        label: 'Bio',
+        value: user.bio!,
+      ));
+    }
+
+    return rows;
   }
 
   Widget _buildDetailSection({
