@@ -3,6 +3,7 @@ import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
 import 'package:hopin/presentation/features/profile/edit_profile_screen.dart';
 import 'package:hopin/presentation/features/report_support/my_reports_screen.dart';
 import 'package:hopin/presentation/features/settings/blocked_users_screen.dart';
+import 'package:hopin/presentation/features/settings/privacy_settings_screen.dart';
 import 'route_names.dart';
 import '../../presentation/features/onboarding/onboarding_screen.dart';
 import '../../presentation/features/auth/login_screen.dart';
@@ -41,6 +42,7 @@ class AppRoutes {
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
       RouteNames.myReport: (context) => const MyReportsScreen(),
       RouteNames.blockedUsers: (context) => const BlockedUsersScreen(),
+      RouteNames.privacy: (context) => const PrivacySettingsScreen(),
     };
   }
 
@@ -103,11 +105,14 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => const BlockedUsersScreen(),
         );
+     case RouteNames.privacy:
+        return MaterialPageRoute(
+          builder: (context) => const PrivacySettingsScreen(),
+        );
 
       case RouteNames.tripHistory:
       case RouteNames.notificationSettings:
       case RouteNames.locationSettings:
-      case RouteNames.privacy:
       case RouteNames.licenses:
         return MaterialPageRoute(
           builder: (context) =>
