@@ -33,7 +33,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           builder: (context, provider, child) {
             if (provider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryYellow),
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryYellow,
+                ),
               );
             }
 
@@ -48,10 +50,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                       children: [
                         _buildInfoCard(),
                         const SizedBox(height: 24),
-                        _buildSectionTitle('Profile Visibility'),
-                        const SizedBox(height: 12),
-                        _buildVisibilityCard(provider),
-                        const SizedBox(height: 32),
+                        // _buildVisibilityCard(provider),
+                        // const SizedBox(height: 32),
                         _buildSectionTitle('What Others Can See'),
                         const SizedBox(height: 12),
                         _buildPrivacyOptions(provider),
@@ -171,74 +171,74 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     );
   }
 
-  Widget _buildVisibilityCard(PrivacyProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider, width: 1),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: provider.settings.profileVisible
-                      ? AppColors.primaryYellow.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  provider.settings.profileVisible
-                      ? Icons.visibility
-                      : Icons.visibility_off,
-                  color: provider.settings.profileVisible
-                      ? AppColors.primaryYellow
-                      : Colors.red,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Profile Visibility',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Make your profile visible to other users',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: provider.settings.profileVisible,
-                onChanged: (value) {
-                  provider.updateProfileVisibility(value);
-                },
-                activeColor: AppColors.primaryYellow,
-                activeTrackColor: AppColors.primaryYellow.withOpacity(0.3),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildVisibilityCard(PrivacyProvider provider) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.cardBackground,
+  //       borderRadius: BorderRadius.circular(16),
+  //       border: Border.all(color: AppColors.divider, width: 1),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Row(
+  //           children: [
+  //             Container(
+  //               padding: const EdgeInsets.all(8),
+  //               decoration: BoxDecoration(
+  //                 color: provider.settings.profileVisible
+  //                     ? AppColors.primaryYellow.withOpacity(0.1)
+  //                     : Colors.red.withOpacity(0.1),
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: Icon(
+  //                 provider.settings.profileVisible
+  //                     ? Icons.visibility
+  //                     : Icons.visibility_off,
+  //                 color: provider.settings.profileVisible
+  //                     ? AppColors.primaryYellow
+  //                     : Colors.red,
+  //                 size: 20,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 12),
+  //             const Expanded(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     'Profile Visibility',
+  //                     style: TextStyle(
+  //                       fontSize: 15,
+  //                       fontWeight: FontWeight.w600,
+  //                       color: AppColors.textPrimary,
+  //                     ),
+  //                   ),
+  //                   SizedBox(height: 4),
+  //                   Text(
+  //                     'Make your profile visible to other users',
+  //                     style: TextStyle(
+  //                       fontSize: 13,
+  //                       color: AppColors.textSecondary,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             Switch(
+  //               value: provider.settings.profileVisible,
+  //               onChanged: (value) {
+  //                 provider.updateProfileVisibility(value);
+  //               },
+  //               activeColor: AppColors.primaryYellow,
+  //               activeTrackColor: AppColors.primaryYellow.withOpacity(0.3),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildPrivacyOptions(PrivacyProvider provider) {
     return Container(
@@ -397,7 +397,11 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                     SnackBar(
                       content: Row(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           const SizedBox(width: 12),
                           const Text(
                             'Privacy settings saved successfully',
@@ -442,10 +446,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               )
             : const Text(
                 'Save Changes',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
