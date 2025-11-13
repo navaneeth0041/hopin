@@ -104,6 +104,7 @@ class ProfilePage extends StatelessWidget {
 
                   ProfileMenuItem(
                     icon: Icons.report_problem_outlined,
+                    iconColor: Colors.yellow,
                     title: 'Report & Support',
                     subtitle: 'Report issues or get help',
                     onTap: () {

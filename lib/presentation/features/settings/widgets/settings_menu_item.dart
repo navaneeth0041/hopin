@@ -34,7 +34,7 @@ class SettingsMenuItem extends StatelessWidget {
                 color: const Color(0xFF2C2C2E),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppColors.textPrimary, size: 22),
+              child: Icon(icon, color: AppColors.primaryYellow, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -63,6 +63,7 @@ class SettingsMenuItem extends StatelessWidget {
             Icon(
               Icons.arrow_forward_ios,
               color: AppColors.textSecondary,
+
               size: 16,
             ),
           ],

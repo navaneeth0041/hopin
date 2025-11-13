@@ -6,6 +6,7 @@ class ProfileMenuItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color? iconColor;
 
   const ProfileMenuItem({
     super.key,
@@ -13,6 +14,7 @@ class ProfileMenuItem extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconColor,
   });
 
   @override
@@ -34,11 +36,7 @@ class ProfileMenuItem extends StatelessWidget {
                 color: const Color(0xFF2C2C2E),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.primaryYellow,
-                size: 24,
-              ),
+              child: Icon(icon, color: AppColors.primaryYellow, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
