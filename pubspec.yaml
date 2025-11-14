@@ -80,6 +80,7 @@ flutter:
   assets:
     - assets/images/HopIn.png
     - assets/images/app_icon.png
+    - assets/images/person_pin.png
     - assets/animations/onboarding(auto).json
 
   # An image asset can refer to one or more resolution-specific "variants", see

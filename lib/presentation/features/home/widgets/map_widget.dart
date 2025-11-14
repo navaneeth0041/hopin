@@ -12,8 +12,9 @@ class TripsMap extends StatefulWidget {
 }
 
 class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
-  late final AnimatedMapController _mapController =
-      AnimatedMapController(vsync: this);
+  late final AnimatedMapController _mapController = AnimatedMapController(
+    vsync: this,
+  );
 
   LatLng? _currentLocation;
   List<Marker> _markers = [];
@@ -32,6 +33,9 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
       final userLocation = LatLng(pos.latitude, pos.longitude);
 
       setState(() => _currentLocation = userLocation);
+      debugPrint(
+        "Current Location: ${_currentLocation!.latitude}, ${_currentLocation!.longitude}",
+      );
 
       await _fetchTrips(pos.latitude, pos.longitude);
 
@@ -63,8 +67,11 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
               width: 60,
               height: 60,
               point: LatLng(trip["lat"]!, trip["lon"]!),
-              child: const Icon(Icons.location_pin,
-                  color: Colors.red, size: 35),
+              child: const Icon(
+                Icons.location_pin,
+                color: Colors.red,
+                size: 35,
+              ),
             ),
           )
           .toList();
@@ -83,7 +90,7 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
 
   void _updateZoom(double newZoom) {
     if (_currentLocation == null) return;
-    setState(() => _zoomLevel = newZoom.clamp(3.0, 22.0)); 
+    setState(() => _zoomLevel = newZoom.clamp(3.0, 22.0));
     _animateTo(_currentLocation!, _zoomLevel);
   }
 
@@ -110,10 +117,11 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
             initialCenter: _currentLocation!,
             initialZoom: _zoomLevel,
             minZoom: 10,
-            maxZoom: 22, 
+            maxZoom: 22,
             onMapReady: () => _animateTo(_currentLocation!, _zoomLevel),
-            interactionOptions:
-                const InteractionOptions(flags: InteractiveFlag.all),
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all,
+            ),
           ),
           children: [
             TileLayer(
@@ -125,14 +133,22 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
             MarkerLayer(
               markers: [
                 Marker(
-                  width: 60,
-                  height: 60,
+                  width: 35,
+                  height: 35,
                   point: _currentLocation!,
-                  child: const Icon(Icons.my_location,
-                      color: Colors.blue, size: 20),
+                  child: Image.asset(
+                    "assets/images/person_pin.png",
+                    width: 20,
+                    height: 20,
+                  ),
                 ),
                 ..._markers,
               ],
+            ),
+            IgnorePointer(
+              child: Container(
+                color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.20), // adjust 0 → 0.3
+              ),
             ),
           ],
         ),
