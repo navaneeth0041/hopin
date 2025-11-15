@@ -32,9 +32,9 @@ class _HomeScreenState extends State<HomeScreen> {
       'label': 'Trips',
     },
     {
-      'icon': Icons.add_circle_outline,
-      'activeIcon': Icons.add_circle,
-      'label': 'Create',
+      'icon': Icons.luggage_outlined,
+      'activeIcon': Icons.luggage,
+      'label': 'My Trips',
     },
     {
       'icon': Icons.person_outline,

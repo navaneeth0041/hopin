@@ -19,7 +19,7 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
   LatLng? _currentLocation;
   List<Marker> _markers = [];
   bool _loading = true;
-  double _zoomLevel = 16.0;
+  final double _zoomLevel = 16.0;
 
   @override
   void initState() {
@@ -88,11 +88,11 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
     );
   }
 
-  void _updateZoom(double newZoom) {
-    if (_currentLocation == null) return;
-    setState(() => _zoomLevel = newZoom.clamp(3.0, 22.0));
-    _animateTo(_currentLocation!, _zoomLevel);
-  }
+  // void _updateZoom(double newZoom) {
+  //   if (_currentLocation == null) return;
+  //   setState(() => _zoomLevel = newZoom.clamp(3.0, 22.0));
+  //   _animateTo(_currentLocation!, _zoomLevel);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +147,12 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
             ),
             IgnorePointer(
               child: Container(
-                color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.20), // adjust 0 → 0.3
+                color: const Color.fromARGB(
+                  255,
+                  255,
+                  255,
+                  255,
+                ).withOpacity(0.20),
               ),
             ),
           ],
