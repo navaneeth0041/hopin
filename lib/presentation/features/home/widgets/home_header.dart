@@ -101,6 +101,8 @@
 //   }
 // }
 
+// ignore_for_file: deprecated_member_use
+
 // lib/features/home/widgets/home_header.dart
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
@@ -114,7 +116,6 @@ class HomeHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left Side — Greeting + Location
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,10 +149,8 @@ class HomeHeader extends StatelessWidget {
           ),
         ),
 
-        // Right Side — Notification + SOS
         Row(
           children: [
-            // Notification Bell
             Stack(
               children: [
                 Container(
@@ -201,10 +200,8 @@ class HomeHeader extends StatelessWidget {
 
             const SizedBox(width: 12),
 
-            //SOS Button
             GestureDetector(
               onTap: () {
-                // TODO: Implement SOS action (e.g., call emergency contact)
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(const SnackBar(content: Text('SOS triggered!')));

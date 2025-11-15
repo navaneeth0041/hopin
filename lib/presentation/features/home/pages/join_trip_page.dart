@@ -1,11 +1,15 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
-import 'package:hopin/data/models/home/ride_model.dart';
+import 'package:hopin/data/models/trip.dart';
+import 'package:hopin/data/providers/trip_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/ride_card.dart';
 import '../widgets/ride_detail_bottom_sheet.dart';
 import '../widgets/filter_chips.dart';
 import '../widgets/filter_bottom_sheet.dart';
-import 'package:intl/intl.dart';
 
 class JoinTripPage extends StatefulWidget {
   const JoinTripPage({super.key});
@@ -15,43 +19,54 @@ class JoinTripPage extends StatefulWidget {
 }
 
 class _JoinTripPageState extends State<JoinTripPage> {
-  List<RideModel> availableRides = RideModelMockData.getMockRides();
-  List<RideModel> filteredRides = [];
+  List<Trip> filteredRides = [];
   String selectedTimeFilter = 'All';
   RideFilterOptions advancedFilters = RideFilterOptions();
+  String? currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _applyFilters();
-  }
-
-  void _applyFilters() {
-    setState(() {
-      filteredRides = availableRides.where((ride) {
-        if (!_matchesTimeFilter(ride)) return false;
-
-        if (advancedFilters.priceRange != null) {
-          if (!_matchesPriceRange(ride)) return false;
-        }
-
-        if (advancedFilters.minSeats != null) {
-          if (ride.availableSeats < advancedFilters.minSeats!) return false;
-        }
-
-        return true;
-      }).toList();
-
-      if (advancedFilters.sortBy != null) {
-        _applySorting();
-      }
+    currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTrips();
     });
   }
 
-  bool _matchesTimeFilter(RideModel ride) {
+  void _loadTrips() {
+    final tripProvider = Provider.of<TripProvider>(context, listen: false);
+    tripProvider.loadActiveTrips();
+  }
+
+  List<Trip> _getFilteredTrips(List<Trip> allTrips) {
+    if (currentUserId == null) return [];
+
+    List<Trip> userFilteredTrips = allTrips
+        .where((trip) => trip.createdBy != currentUserId)
+        .toList();
+
+    List<Trip> timeFiltered = userFilteredTrips.where((trip) {
+      return _matchesTimeFilter(trip);
+    }).toList();
+
+    List<Trip> advancedFiltered = timeFiltered.where((trip) {
+      if (advancedFilters.minSeats != null) {
+        if (trip.availableSeats < advancedFilters.minSeats!) return false;
+      }
+
+      return true;
+    }).toList();
+
+    if (advancedFilters.sortBy != null) {
+      _applySorting(advancedFiltered);
+    }
+
+    return advancedFiltered;
+  }
+
+  bool _matchesTimeFilter(Trip trip) {
     try {
-      final dateFormat = DateFormat('d MMM yyyy');
-      final rideDate = dateFormat.parse(ride.date);
+      final rideDate = trip.departureTime;
       final now = DateTime.now();
 
       switch (selectedTimeFilter) {
@@ -76,80 +91,23 @@ class _JoinTripPageState extends State<JoinTripPage> {
     }
   }
 
-  bool _matchesPriceRange(RideModel ride) {
-    try {
-      final priceStr = ride.price.replaceAll(RegExp(r'[^\d.]'), '');
-      final price = double.parse(priceStr);
-
-      switch (advancedFilters.priceRange) {
-        case 'Under ₹50':
-          return price < 50;
-        case '₹50 - ₹100':
-          return price >= 50 && price <= 100;
-        case '₹100 - ₹200':
-          return price > 100 && price <= 200;
-        case 'Above ₹200':
-          return price > 200;
-        default:
-          return true;
-      }
-    } catch (e) {
-      return true;
-    }
-  }
-
-  void _applySorting() {
+  void _applySorting(List<Trip> trips) {
     switch (advancedFilters.sortBy) {
-      case 'Price: Low to High':
-        filteredRides.sort((a, b) {
-          final priceA =
-              double.tryParse(a.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-          final priceB =
-              double.tryParse(b.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-          return priceA.compareTo(priceB);
-        });
-        break;
-      case 'Price: High to Low':
-        filteredRides.sort((a, b) {
-          final priceA =
-              double.tryParse(a.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-          final priceB =
-              double.tryParse(b.price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-          return priceB.compareTo(priceA);
-        });
-        break;
       case 'Time: Earliest First':
-        filteredRides.sort(
-          (a, b) => _parseTime(a.time).compareTo(_parseTime(b.time)),
-        );
+        trips.sort((a, b) => a.departureTime.compareTo(b.departureTime));
         break;
       case 'Time: Latest First':
-        filteredRides.sort(
-          (a, b) => _parseTime(b.time).compareTo(_parseTime(a.time)),
-        );
+        trips.sort((a, b) => b.departureTime.compareTo(a.departureTime));
         break;
       case 'Seats: Most Available':
-        filteredRides.sort(
-          (a, b) => b.availableSeats.compareTo(a.availableSeats),
-        );
+        trips.sort((a, b) => b.availableSeats.compareTo(a.availableSeats));
         break;
-    }
-  }
-
-  int _parseTime(String timeStr) {
-    try {
-      final format = DateFormat('h:mm a');
-      final time = format.parse(timeStr);
-      return time.hour * 60 + time.minute;
-    } catch (e) {
-      return 0;
     }
   }
 
   void _onTimeFilterSelected(String filter) {
     setState(() {
       selectedTimeFilter = filter;
-      _applyFilters();
     });
   }
 
@@ -164,24 +122,23 @@ class _JoinTripPageState extends State<JoinTripPage> {
     if (result != null) {
       setState(() {
         advancedFilters = result;
-        _applyFilters();
       });
     }
   }
 
-  void _showRideDetails(RideModel ride) {
+  void _showRideDetails(Trip trip) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => RideDetailBottomSheet(ride: ride),
+      builder: (context) => RideDetailBottomSheet(trip: trip),
     );
   }
 
-  void _handleJoinRide(RideModel ride) {
+  void _handleJoinRide(Trip trip) async {
     String noteText = '';
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         final TextEditingController noteController = TextEditingController();
@@ -234,7 +191,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
                       children: [
                         const TextSpan(text: 'You\'re requesting to join '),
                         TextSpan(
-                          text: ride.driverName,
+                          text: trip.creatorName,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
@@ -283,7 +240,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  ride.from,
+                                  trip.currentLocation,
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -345,7 +302,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  ride.to,
+                                  trip.destination,
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -450,7 +407,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
                 Expanded(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.of(dialogContext).pop();
+                      Navigator.of(dialogContext).pop(false);
                     },
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -473,44 +430,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(dialogContext).pop();
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accentGreen.withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.check,
-                                  color: AppColors.accentGreen,
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Request sent to ${ride.driverName}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          backgroundColor: AppColors.cardBackground,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          margin: const EdgeInsets.all(16),
-                        ),
-                      );
+                      Navigator.of(dialogContext).pop(true);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryYellow,
@@ -536,133 +456,203 @@ class _JoinTripPageState extends State<JoinTripPage> {
         );
       },
     );
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            MediaQuery.of(context).padding.top + 16,
-            20,
-            12,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Available Rides',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryYellow.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${filteredRides.length} rides',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryYellow,
+    if (result == true && mounted) {
+      final tripProvider = Provider.of<TripProvider>(context, listen: false);
+      final success = await tripProvider.joinTrip(trip.id);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGreen.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: AppColors.accentGreen,
+                    size: 16,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: FilterChips(
-            selectedFilter: selectedTimeFilter,
-            onFilterSelected: _onTimeFilterSelected,
-            onMoreFilters: _showAdvancedFilters,
-          ),
-        ),
-
-        if (advancedFilters.hasActiveFilters)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryYellow.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primaryYellow.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.filter_alt,
-                  size: 16,
-                  color: AppColors.primaryYellow,
-                ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _getActiveFiltersText(),
+                    'Successfully joined ${trip.creatorName}\'s ride',
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      advancedFilters = RideFilterOptions();
-                      _applyFilters();
-                    });
-                  },
-                  child: const Icon(
-                    Icons.close,
-                    size: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
               ],
             ),
+            backgroundColor: AppColors.cardBackground,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              tripProvider.errorMessage ?? 'Failed to join ride',
+              style: const TextStyle(color: AppColors.textPrimary),
+            ),
+            backgroundColor: AppColors.accentRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
+  }
 
-        Expanded(
-          child: filteredRides.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                  itemCount: filteredRides.length,
-                  itemBuilder: (context, index) {
-                    final ride = filteredRides[index];
-                    return RideCard(
-                      ride: ride,
-                      onJoinRide: () => _handleJoinRide(ride),
-                      onViewDetails: () => _showRideDetails(ride),
-                    );
-                  },
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TripProvider>(
+      builder: (context, tripProvider, child) {
+        filteredRides = _getFilteredTrips(tripProvider.activeTrips);
+
+        return Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.of(context).padding.top + 16,
+                20,
+                12,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Available Rides',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryYellow.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${filteredRides.length} rides',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryYellow,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: FilterChips(
+                selectedFilter: selectedTimeFilter,
+                onFilterSelected: _onTimeFilterSelected,
+                onMoreFilters: _showAdvancedFilters,
+              ),
+            ),
+
+            if (advancedFilters.hasActiveFilters)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-        ),
-      ],
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primaryYellow.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.filter_alt,
+                      size: 16,
+                      color: AppColors.primaryYellow,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _getActiveFiltersText(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          advancedFilters = RideFilterOptions();
+                        });
+                      },
+                      child: const Icon(
+                        Icons.close,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            Expanded(
+              child: tripProvider.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryYellow,
+                      ),
+                    )
+                  : filteredRides.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                      itemCount: filteredRides.length,
+                      itemBuilder: (context, index) {
+                        final trip = filteredRides[index];
+                        return RideCard(
+                          trip: trip,
+                          onJoinRide: () => _handleJoinRide(trip),
+                          onViewDetails: () => _showRideDetails(trip),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   String _getActiveFiltersText() {
     List<String> filters = [];
 
-    if (advancedFilters.priceRange != null) {
-      filters.add(advancedFilters.priceRange!);
-    }
     if (advancedFilters.minSeats != null) {
       filters.add('${advancedFilters.minSeats}+ seats');
     }
@@ -670,7 +660,9 @@ class _JoinTripPageState extends State<JoinTripPage> {
       filters.add(advancedFilters.sortBy!);
     }
 
-    return 'Active filters: ${filters.join(' • ')}';
+    return filters.isEmpty
+        ? 'Active filters'
+        : 'Active filters: ${filters.join(' • ')}';
   }
 
   Widget _buildEmptyState() {
@@ -705,7 +697,6 @@ class _JoinTripPageState extends State<JoinTripPage> {
                 setState(() {
                   selectedTimeFilter = 'All';
                   advancedFilters = RideFilterOptions();
-                  _applyFilters();
                 });
               },
               child: const Text(

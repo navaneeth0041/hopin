@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/providers/user_profile_provider.dart';

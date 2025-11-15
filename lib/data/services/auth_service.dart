@@ -153,7 +153,6 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print('Error fetching user data: $e');
       return null;
     }
   }
@@ -166,7 +165,6 @@ class AuthService {
       });
       return true;
     } catch (e) {
-      print('Error updating user data: $e');
       return false;
     }
   }

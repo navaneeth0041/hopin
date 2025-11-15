@@ -17,10 +17,8 @@ class PrivacyService {
         return PrivacySettings.fromMap(doc.data()!);
       }
 
-      // Return default settings if document doesn't exist
       return PrivacySettings();
     } catch (e) {
-      print('Error getting privacy settings: $e');
       return PrivacySettings();
     }
   }
@@ -35,14 +33,10 @@ class PrivacyService {
           .doc(uid)
           .collection('preferences')
           .doc('privacy')
-          .set(
-            settings.toMap(),
-            SetOptions(merge: true),
-          );
+          .set(settings.toMap(), SetOptions(merge: true));
 
       return true;
     } catch (e) {
-      print('Error updating privacy settings: $e');
       return false;
     }
   }
@@ -53,7 +47,6 @@ class PrivacyService {
     try {
       final Map<String, PrivacySettings> settingsMap = {};
 
-      // Firestore has a limit of 10 items per 'in' query, so we batch
       for (int i = 0; i < userIds.length; i += 10) {
         final batch = userIds.skip(i).take(10).toList();
 
@@ -65,7 +58,6 @@ class PrivacyService {
 
       return settingsMap;
     } catch (e) {
-      print('Error getting batch privacy settings: $e');
       return {};
     }
   }
@@ -97,8 +89,7 @@ class PrivacyService {
           return true;
       }
     } catch (e) {
-      print('Error checking field visibility: $e');
-      return true; // Default to visible on error
+      return true;
     }
   }
 }

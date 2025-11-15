@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, unnecessary_to_list_in_spreads
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hopin/core/constants/app_colors.dart';
@@ -687,7 +689,7 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
         ),
       ),
     );
-    void _showCustomSnackBar(String message, Color color, IconData icon) {
+    void showCustomSnackBar(String message, Color color, IconData icon) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -813,13 +815,13 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
       Navigator.pop(context);
 
       if (result['success']) {
-        _showCustomSnackBar(
+        showCustomSnackBar(
           '🚨 SOS Alert Sent Successfully! ${result['contactsNotified']} contacts notified${result['location'] != null ? ' (Location shared)' : ''}',
           AppColors.accentRed,
           Icons.warning_amber_rounded,
         );
       } else {
-        _showCustomSnackBar(
+        showCustomSnackBar(
           'SOS failed: ${result['error']}',
           AppColors.accentRed,
           Icons.error_outline,
@@ -827,7 +829,7 @@ class _EmergencyContactScreenState extends State<EmergencyContactScreen> {
       }
     } catch (e) {
       Navigator.pop(context);
-      _showCustomSnackBar(
+      showCustomSnackBar(
         'Error: $e',
         AppColors.accentRed,
         Icons.error_outline,

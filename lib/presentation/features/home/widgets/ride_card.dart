@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
-import 'package:hopin/data/models/home/ride_model.dart';
+import 'package:hopin/data/models/trip.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 class RideCard extends StatelessWidget {
-  final RideModel ride;
+  final Trip trip;
   final VoidCallback onJoinRide;
   final VoidCallback onViewDetails;
 
   const RideCard({
     super.key,
-    required this.ride,
+    required this.trip,
     required this.onJoinRide,
     required this.onViewDetails,
   });
+
+  String _formatDate(DateTime dateTime) {
+    return DateFormat('d MMM yyyy').format(dateTime);
+  }
+
+  String _formatTime(DateTime dateTime) {
+    return DateFormat('h:mm a').format(dateTime);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,18 +41,26 @@ class RideCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryYellow,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.black,
-                    size: 28,
-                  ),
+                FutureBuilder<Widget>(
+                  future: _buildProfileImage(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return snapshot.data!;
+                    }
+                    return Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.black,
+                        size: 28,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 12),
 
@@ -49,7 +69,7 @@ class RideCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        ride.driverName,
+                        trip.creatorName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -58,7 +78,8 @@ class RideCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        ride.hostel,
+                        trip.creatorDetails?['department'] ??
+                            'Unknown Department',
                         style: TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -123,7 +144,7 @@ class RideCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        ride.from,
+                        trip.currentLocation,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -194,7 +215,7 @@ class RideCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        ride.to,
+                        trip.destination,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -227,7 +248,7 @@ class RideCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      ride.date,
+                      _formatDate(trip.departureTime),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textPrimary,
@@ -246,7 +267,7 @@ class RideCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      ride.time,
+                      _formatTime(trip.departureTime),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textPrimary,
@@ -265,7 +286,7 @@ class RideCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '${ride.availableSeats} seats',
+                      '${trip.availableSeats} seats',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textPrimary,
@@ -278,7 +299,7 @@ class RideCard extends StatelessWidget {
             ),
           ),
 
-          if (ride.note.isNotEmpty) ...[
+          if (trip.note != null && trip.note!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -300,7 +321,7 @@ class RideCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        ride.note,
+                        trip.note!,
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -323,25 +344,81 @@ class RideCard extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: onJoinRide,
+                onPressed: trip.availableSeats > 0 ? onJoinRide : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryYellow,
                   foregroundColor: Colors.black,
+                  disabledBackgroundColor: AppColors.divider,
+                  disabledForegroundColor: AppColors.textSecondary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Join Ride',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  trip.availableSeats > 0 ? 'Join Ride' : 'Full',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<Widget> _buildProfileImage() async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(trip.createdBy)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final details = userData?['details'] as Map<String, dynamic>?;
+        final base64Image = details?['profileImageBase64'] as String?;
+
+        if (base64Image != null && base64Image.isNotEmpty) {
+          try {
+            final Uint8List bytes = base64Decode(base64Image);
+            return Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: MemoryImage(bytes),
+                  fit: BoxFit.cover,
+                ),
+                border: Border.all(color: AppColors.primaryYellow, width: 2),
+              ),
+            );
+          } catch (e) {
+            return _buildDefaultProfileImage();
+          }
+        }
+      }
+    } catch (e) {
+      return _buildDefaultProfileImage();
+    }
+
+    return _buildDefaultProfileImage();
+  }
+
+  Widget _buildDefaultProfileImage() {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.primaryYellow,
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.person, color: Colors.black, size: 28),
     );
   }
 }

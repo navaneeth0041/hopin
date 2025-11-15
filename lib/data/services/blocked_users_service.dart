@@ -27,7 +27,6 @@ class BlockedUsersService {
         );
       }).toList();
     } catch (e) {
-      print('Error getting blocked users: $e');
       return [];
     }
   }
@@ -52,7 +51,6 @@ class BlockedUsersService {
         );
       }).toList();
     } catch (e) {
-      print('Error getting all users: $e');
       return [];
     }
   }
@@ -68,7 +66,6 @@ class BlockedUsersService {
 
       return true;
     } catch (e) {
-      print('Error blocking user: $e');
       return false;
     }
   }
@@ -84,7 +81,6 @@ class BlockedUsersService {
 
       return true;
     } catch (e) {
-      print('Error unblocking user: $e');
       return false;
     }
   }
@@ -100,7 +96,6 @@ class BlockedUsersService {
 
       return doc.exists;
     } catch (e) {
-      print('Error checking if user is blocked: $e');
       return false;
     }
   }
@@ -115,7 +110,6 @@ class BlockedUsersService {
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
-      print('Error getting blocked user IDs: $e');
       return [];
     }
   }
@@ -131,7 +125,6 @@ class BlockedUsersService {
 
       return snapshot.count ?? 0;
     } catch (e) {
-      print('Error getting blocked users count: $e');
       return 0;
     }
   }

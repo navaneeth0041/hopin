@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -28,9 +30,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     await reportProvider.loadUserReports();
 
     if (mounted) {
-      print('Reports loaded: ${reportProvider.reports.length}');
       if (reportProvider.errorMessage != null) {
-        print('Error: ${reportProvider.errorMessage}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(reportProvider.errorMessage!),

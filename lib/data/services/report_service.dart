@@ -46,7 +46,6 @@ class ReportService {
 
       return {'success': true, 'reportId': reportId};
     } catch (e) {
-      print('Error submitting report: $e');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -55,11 +54,8 @@ class ReportService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        print('No authenticated user');
         return [];
       }
-
-      print('Fetching reports for user: ${user.uid}');
 
       Query query = _firestore
           .collection('reports')
@@ -71,15 +67,11 @@ class ReportService {
       }
 
       final snapshot = await query.get();
-      print('Found ${snapshot.docs.length} reports');
 
       return snapshot.docs.map((doc) {
-        print('Report data: ${doc.data()}');
         return Report.fromMap(doc.data() as Map<String, dynamic>);
       }).toList();
     } catch (e) {
-      print('Error getting user reports: $e');
-      print('Error details: ${e.toString()}');
       return [];
     }
   }
@@ -91,7 +83,6 @@ class ReportService {
       if (!doc.exists) return null;
       return Report.fromMap(doc.data() as Map<String, dynamic>);
     } catch (e) {
-      print('Error getting report: $e');
       return null;
     }
   }
@@ -117,7 +108,6 @@ class ReportService {
 
       return true;
     } catch (e) {
-      print('Error updating report status: $e');
       return false;
     }
   }
@@ -145,7 +135,6 @@ class ReportService {
 
       return true;
     } catch (e) {
-      print('Error deleting report: $e');
       return false;
     }
   }
@@ -171,7 +160,6 @@ class ReportService {
 
       return counts;
     } catch (e) {
-      print('Error getting reports count: $e');
       return {};
     }
   }
@@ -217,7 +205,6 @@ class ReportService {
 
       return {'success': true, 'ticketId': ticketId};
     } catch (e) {
-      print('Error submitting support ticket: $e');
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -243,7 +230,6 @@ class ReportService {
           )
           .toList();
     } catch (e) {
-      print('Error getting support tickets: $e');
       return [];
     }
   }

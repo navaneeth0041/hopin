@@ -1,28 +1,26 @@
+// ignore_for_file: deprecated_member_use, unnecessary_to_list_in_spreads
+
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/presentation/common_widgets/custom_buttons.dart';
 
 class RideFilterOptions {
-  String? priceRange;
   int? minSeats;
   String? sortBy;
 
-  RideFilterOptions({this.priceRange, this.minSeats, this.sortBy});
+  RideFilterOptions({this.minSeats, this.sortBy});
 
   RideFilterOptions copyWith({
-    String? priceRange,
     int? minSeats,
     String? sortBy,
   }) {
     return RideFilterOptions(
-      priceRange: priceRange ?? this.priceRange,
       minSeats: minSeats ?? this.minSeats,
       sortBy: sortBy ?? this.sortBy,
     );
   }
 
-  bool get hasActiveFilters =>
-      priceRange != null || minSeats != null || sortBy != null;
+  bool get hasActiveFilters => minSeats != null || sortBy != null;
 }
 
 class FilterBottomSheet extends StatefulWidget {
@@ -37,16 +35,7 @@ class FilterBottomSheet extends StatefulWidget {
 class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late RideFilterOptions _filters;
 
-  final List<String> _priceRanges = [
-    'Under ₹50',
-    '₹50 - ₹100',
-    '₹100 - ₹200',
-    'Above ₹200',
-  ];
-
   final List<String> _sortOptions = [
-    'Price: Low to High',
-    'Price: High to Low',
     'Time: Earliest First',
     'Time: Latest First',
     'Seats: Most Available',
@@ -56,7 +45,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   void initState() {
     super.initState();
     _filters = RideFilterOptions(
-      priceRange: widget.currentFilters.priceRange,
       minSeats: widget.currentFilters.minSeats,
       sortBy: widget.currentFilters.sortBy,
     );
@@ -83,9 +71,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         ),
       ),
       child: DraggableScrollableSheet(
-        initialChildSize: 0.7,
+        initialChildSize: 0.6,
         minChildSize: 0.5,
-        maxChildSize: 0.9,
+        maxChildSize: 0.8,
         expand: false,
         builder: (context, scrollController) {
           return Column(
@@ -140,29 +128,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionTitle('Price Range'),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _priceRanges.map((range) {
-                          final isSelected = _filters.priceRange == range;
-                          return _buildChoiceChip(
-                            label: range,
-                            isSelected: isSelected,
-                            onSelected: () {
-                              setState(() {
-                                _filters = _filters.copyWith(
-                                  priceRange: isSelected ? null : range,
-                                );
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 24),
-
                       _buildSectionTitle('Minimum Available Seats'),
                       const SizedBox(height: 12),
                       Row(
@@ -291,37 +256,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         fontSize: 16,
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
-      ),
-    );
-  }
-
-  Widget _buildChoiceChip({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onSelected,
-  }) {
-    return GestureDetector(
-      onTap: onSelected,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primaryYellow
-              : AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryYellow : AppColors.divider,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? Colors.black : AppColors.textPrimary,
-          ),
-        ),
       ),
     );
   }

@@ -45,10 +45,8 @@ class ReportProvider extends ChangeNotifier {
 
     try {
       _reports = await _reportService.getUserReports();
-      print('Loaded ${_reports.length} reports');
       notifyListeners();
     } catch (e) {
-      print('Error in loadUserReports: $e');
       _setError('Failed to load reports: ${e.toString()}');
     } finally {
       _setLoading(false);

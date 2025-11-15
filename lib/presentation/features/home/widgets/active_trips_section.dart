@@ -126,10 +126,12 @@
 //   }
 // }
 
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/home/ride_model.dart';
-import 'ride_detail_bottom_sheet.dart';
+// import 'ride_detail_bottom_sheet.dart';
 
 class ActiveRideCard extends StatelessWidget {
   const ActiveRideCard({super.key});
@@ -188,50 +190,50 @@ class ActiveRideCard extends StatelessWidget {
               ),
 
 
-              GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => RideDetailBottomSheet(ride: ride),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
+              // GestureDetector(
+              //   onTap: () {
+              //     showModalBottomSheet(
+              //       context: context,
+              //       isScrollControlled: true,
+              //       backgroundColor: Colors.transparent,
+              //       builder: (_) => RideDetailBottomSheet(ride: ride),
+              //     );
+              //   },
+              //   child: Container(
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: 14,
+              //       vertical: 8,
+              //     ),
+              //     decoration: BoxDecoration(
 
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+              //       color: Colors.white.withOpacity(0.1),
+              //       borderRadius: BorderRadius.circular(20),
 
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: AppColors.textSecondary,
-                        size: 16,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Details',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              //       border: Border.all(
+              //         color: Colors.white.withOpacity(0.2),
+              //         width: 1,
+              //       ),
+              //     ),
+              //     child: const Row(
+              //       children: [
+              //         Icon(
+              //           Icons.info_outline,
+              //           color: AppColors.textSecondary,
+              //           size: 16,
+              //         ),
+              //         SizedBox(width: 6),
+              //         Text(
+              //           'Details',
+              //           style: TextStyle(
+              //             fontSize: 13,
+              //             color: AppColors.textPrimary,
+              //             fontWeight: FontWeight.w500,
+              //           ),
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
             ],
           ),
 
