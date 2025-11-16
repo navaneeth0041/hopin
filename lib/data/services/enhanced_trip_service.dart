@@ -372,4 +372,139 @@ class EnhancedTripService {
       print('Error auto-expiring trips: $e');
     }
   }
+
+  Future<Map<String, dynamic>> removeUserFromTrip({
+    required String tripId,
+    required String userIdToRemove,
+    required String requesterId,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return {'success': false, 'error': 'User not authenticated'};
+      }
+
+      final tripDoc = await _tripsCollection.doc(tripId).get();
+      if (!tripDoc.exists) {
+        return {'success': false, 'error': 'Trip not found'};
+      }
+
+      final trip = Trip.fromMap(
+        tripDoc.data() as Map<String, dynamic>,
+        tripDoc.id,
+      );
+
+      if (trip.createdBy != requesterId) {
+        return {
+          'success': false,
+          'error': 'Only the trip creator can remove participants',
+        };
+      }
+
+      if (userIdToRemove == trip.createdBy) {
+        return {
+          'success': false,
+          'error': 'Creator cannot be removed. Cancel the trip instead.',
+        };
+      }
+
+      if (!trip.joinedUsers.contains(userIdToRemove)) {
+        return {'success': false, 'error': 'User is not part of this trip'};
+      }
+
+      final now = DateTime.now();
+      if (trip.departureTime.isBefore(now)) {
+        return {
+          'success': false,
+          'error': 'Cannot remove users from a trip that has already started',
+        };
+      }
+
+      final oneHourBeforeDeparture = trip.departureTime.subtract(
+        const Duration(hours: 1),
+      );
+      if (now.isAfter(oneHourBeforeDeparture)) {
+        final minutesRemaining = trip.departureTime.difference(now).inMinutes;
+        return {
+          'success': false,
+          'error':
+              'Cannot remove users less than 1 hour before departure ($minutesRemaining minutes remaining)',
+        };
+      }
+
+      if (trip.status == TripStatus.completed) {
+        return {
+          'success': false,
+          'error': 'Cannot remove users from a completed trip',
+        };
+      }
+
+      if (trip.status == TripStatus.cancelled) {
+        return {
+          'success': false,
+          'error': 'Cannot remove users from a cancelled trip',
+        };
+      }
+
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(userIdToRemove)
+          .get();
+      final removedUserName = userDoc.data()?['details']?['fullName'] ?? 'User';
+
+      await _tripsCollection.doc(tripId).update({
+        'joinedUsers': FieldValue.arrayRemove([userIdToRemove]),
+        'availableSeats': FieldValue.increment(1),
+        'status': 'active',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await _createNotification(
+        userId: userIdToRemove,
+        tripId: tripId,
+        type: NotificationType.memberLeft,
+        title: 'Removed from Trip',
+        message:
+            'You have been removed from the trip by ${trip.creatorName}. A seat has been freed.',
+        data: {'removedBy': trip.creatorName, 'reason': 'removed_by_creator'},
+      );
+
+      for (final memberId in trip.joinedUsers) {
+        if (memberId != userIdToRemove) {
+          await _createNotification(
+            userId: memberId,
+            tripId: tripId,
+            type: NotificationType.memberLeft,
+            title: 'Member Removed',
+            message: '$removedUserName was removed from the trip',
+          );
+        }
+      }
+
+      final pendingRequests = await _firestore
+          .collection('tripRequests')
+          .where('tripId', isEqualTo: tripId)
+          .where('requesterId', isEqualTo: userIdToRemove)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      for (final doc in pendingRequests.docs) {
+        await doc.reference.update({
+          'status': 'cancelled',
+          'responseMessage': 'Removed from trip by creator',
+        });
+      }
+
+      return {
+        'success': true,
+        'message': '$removedUserName has been removed from the trip',
+        'removedUserName': removedUserName,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to remove user: ${e.toString()}',
+      };
+    }
+  }
 }
