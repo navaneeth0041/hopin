@@ -146,7 +146,7 @@ class TripValidationService {
           'error':
               'Too many recent cancellations. Please wait 24 hours before creating new trips.',
         };
-      }
+      } 
 
       final totalActiveParticipation = await _getTotalActiveParticipation(
         userId,
@@ -529,7 +529,7 @@ class TripValidationService {
           'error':
               'Daily trip creation limit reached ($maxTripsPerDay per day). Try again tomorrow.',
         };
-      }
+      } 
 
       return {'allowed': true};
     } catch (e) {

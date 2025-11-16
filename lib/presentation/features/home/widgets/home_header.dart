@@ -108,12 +108,60 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/providers/user_profile_provider.dart';
+import 'package:hopin/data/services/location_service.dart';
+import 'package:hopin/data/services/geocoding_service.dart';
 import 'package:hopin/data/services/trip_request_service.dart';
 import 'package:hopin/presentation/features/notifications/notifications_screen.dart';
 import 'package:provider/provider.dart';
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends StatefulWidget {
   const HomeHeader({super.key});
+
+  @override
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  String _currentLocation = 'Loading location...';
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+    // Update location every 30 seconds
+    _startLocationUpdates();
+  }
+
+  void _startLocationUpdates() {
+    // Update location periodically
+    Stream.periodic(const Duration(seconds: 30)).listen((_) {
+      if (mounted) {
+        _getCurrentLocation();
+      }
+    });
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      final position = await LocationService.getCurrentLocation();
+      final address = await GeocodingService.getAddressFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _currentLocation = address;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentLocation = 'Location unavailable';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,22 +189,41 @@ class HomeHeader extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.textSecondary,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Kochi, Kerala',
-                    style: TextStyle(
-                      fontSize: 13,
+              GestureDetector(
+                onTap: _getCurrentLocation,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
                       color: AppColors.textSecondary,
+                      size: 16,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _currentLocation,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (_currentLocation == 'Loading location...')
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        width: 12,
+                        height: 12,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

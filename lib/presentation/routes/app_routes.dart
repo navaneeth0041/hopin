@@ -21,6 +21,8 @@ import '../../presentation/features/settings/change_password_screen.dart';
 import '../../presentation/features/emergency_contact/emergency_contact_screen.dart';
 import '../../presentation/features/driver_directory/driver_directory_screen.dart';
 import '../../presentation/features/report_support/report_support_screen.dart';
+import '../../presentation/features/home/pages/create_trip_page.dart';
+import '../../presentation/features/home/pages/join_trip_page.dart';
 
 class AppRoutes {
   static Map<String, WidgetBuilder> get routes {
@@ -45,6 +47,8 @@ class AppRoutes {
       RouteNames.blockedUsers: (context) => const BlockedUsersScreen(),
       RouteNames.privacy: (context) => const PrivacySettingsScreen(),
       RouteNames.notifications: (context) => const NotificationsScreen(),
+      RouteNames.createTrip: (context) => const CreateTripPage(),
+      RouteNames.joinTrip: (context) => const JoinTripPage(),
     };
   }
 
@@ -116,6 +120,15 @@ class AppRoutes {
           builder: (context) =>  NotificationsScreen(),
         );
 
+      case RouteNames.createTrip:
+        return MaterialPageRoute(
+          builder: (context) => const CreateTripPage(),
+        );
+
+      case RouteNames.joinTrip:
+        return MaterialPageRoute(
+          builder: (context) => const JoinTripPage(),
+        );
 
       case RouteNames.tripHistory:
       case RouteNames.notificationSettings:

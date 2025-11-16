@@ -323,7 +323,25 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<TripProvider, BlockedUsersProvider>(
+    return Scaffold(
+      backgroundColor: AppColors.darkBackground,
+      appBar: AppBar(
+        backgroundColor: AppColors.darkBackground,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Find Rides',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: Consumer2<TripProvider, BlockedUsersProvider>(
       builder: (context, tripProvider, blockedProvider, child) {
         final blockedUserIds = blockedProvider.blockedUsers
             .map((user) => user.uid)
@@ -460,6 +478,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
           ],
         );
       },
+      ),
     );
   }
 

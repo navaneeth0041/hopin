@@ -4,7 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 
-@pragma('vm:entry-point')
+@pragma('vm:entry-point') //this function runs when the app is terminated -- needed for notif
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('📱 Background message received: ${message.messageId}');
   

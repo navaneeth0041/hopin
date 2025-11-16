@@ -130,64 +130,103 @@
 
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
-import 'package:hopin/data/models/home/ride_model.dart';
+import 'package:hopin/data/models/trip.dart';
+import 'package:hopin/data/providers/trip_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 // import 'ride_detail_bottom_sheet.dart';
 
 class ActiveRideCard extends StatelessWidget {
   const ActiveRideCard({super.key});
 
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour == 0 ? 12 : dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  String _formatDate(DateTime dateTime) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${dateTime.day} ${months[dateTime.month - 1]}, ${dateTime.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Pick the first ride from mock data (or any default)
-    final ride = RideModelMockData.getMockRides().first;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    
+    return Consumer<TripProvider>(
+      builder: (context, tripProvider, child) {
 
-    return Container(
-  
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+        Trip? activeTrip;
+        
+        final createdTrips = tripProvider.myCreatedTrips.where((trip) => 
+          trip.status == TripStatus.active || trip.status == TripStatus.full).toList();
+        
+        if (createdTrips.isNotEmpty) {
+          activeTrip = createdTrips.first;
+        } else {
+          final joinedTrips = tripProvider.myJoinedTrips.where((trip) => 
+            trip.status == TripStatus.active || trip.status == TripStatus.full).toList();
+          
+          if (joinedTrips.isNotEmpty) {
+            activeTrip = joinedTrips.first;
+          }
+        }
 
-        color: Colors.transparent,
- 
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        if (activeTrip == null) {
+          return const SizedBox.shrink();
+        }
 
-          Row(
+        final isOwnTrip = activeTrip.createdBy == currentUserId;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryYellow,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person, color: Colors.black, size: 26),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      ride.driverName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isOwnTrip ? Colors.blue : AppColors.primaryYellow,
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      ride.hostel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                    child: Icon(
+                      isOwnTrip ? Icons.account_circle : Icons.person,
+                      color: Colors.black,
+                      size: 26,
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isOwnTrip ? 'You (${activeTrip.creatorName})' : activeTrip.creatorName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isOwnTrip ? 'Trip Creator' : 'Trip Member',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
 
               // GestureDetector(
@@ -240,130 +279,136 @@ class ActiveRideCard extends StatelessWidget {
           const SizedBox(height: 14),
 
 
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'From',
+                  const SizedBox(height: 14),
+
+                  // Route information
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'From',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Text(
+                              activeTrip.currentLocation,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward, color: AppColors.textSecondary),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'To',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Text(
+                              activeTrip.destination,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Trip details row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_outlined,
+                            color: AppColors.textSecondary,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDate(activeTrip.departureTime),
+                            style: const TextStyle(color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: AppColors.textSecondary,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatTime(activeTrip.departureTime),
+                            style: const TextStyle(color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.event_seat,
+                            color: AppColors.textSecondary,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${activeTrip.availableSeats} seats',
+                            style: const TextStyle(color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Status badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: activeTrip.status == TripStatus.active
+                          ? AppColors.accentGreen.withOpacity(0.15)
+                          : Colors.orange.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      activeTrip.status == TripStatus.active ? 'Active' : 
+                      activeTrip.status == TripStatus.full ? 'Full' : 'Completed',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      ride.from,
-                      style: const TextStyle(
-                        fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: activeTrip.status == TripStatus.active
+                            ? AppColors.accentGreen
+                            : Colors.orange,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward, color: AppColors.textSecondary),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'To',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      ride.to,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    color: AppColors.textSecondary,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    ride.date,
-                    style: const TextStyle(color: AppColors.textPrimary),
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.access_time,
-                    color: AppColors.textSecondary,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    ride.time,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.event_seat,
-                    color: AppColors.textSecondary,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${ride.availableSeats} seats',
-                    style: const TextStyle(color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: ride.status == 'Confirmed'
-                  ? AppColors.accentGreen.withOpacity(0.15)
-                  : Colors.orange.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              ride.status,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: ride.status == 'Confirmed'
-                    ? AppColors.accentGreen
-                    : Colors.orange,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+            );
+          },
+        );
   }
 }
