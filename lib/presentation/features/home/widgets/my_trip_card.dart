@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/trip.dart';
+import 'package:hopin/data/services/trip_request_service.dart';
 
 class MyTripCard extends StatelessWidget {
   final Trip trip;
@@ -353,24 +354,74 @@ class MyTripCard extends StatelessWidget {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onViewRequests,
-                  icon: const Icon(Icons.inbox, size: 18),
-                  label: const Text('View Join Requests'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primaryYellow,
-                    side: BorderSide(
-                      color: AppColors.primaryYellow.withOpacity(0.3),
-                      width: 1.5,
+              child: StreamBuilder<List<dynamic>>(
+                stream: TripRequestService().getTripRequests(trip.id),
+                builder: (context, snapshot) {
+                  final pendingCount = snapshot.data?.length ?? 0;
+
+                  return InkWell(
+                    onTap: onViewRequests,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primaryYellow.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 20,
+                            color: AppColors.primaryYellow,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'View Join Requests',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryYellow,
+                            ),
+                          ),
+                          if (pendingCount > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentRed,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.accentRed.withOpacity(0.4),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                pendingCount > 9 ? '9+' : '$pendingCount',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ],
