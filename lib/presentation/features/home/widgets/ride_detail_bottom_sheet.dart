@@ -429,7 +429,14 @@ class _RideDetailBottomSheetState extends State<RideDetailBottomSheet> {
   }
 
   Widget _buildJoinedUsersSection() {
-    if (widget.trip.joinedUsers.isEmpty) {
+    final allParticipants = [
+      {'userId': widget.trip.createdBy, 'isCreator': true},
+      ...widget.trip.joinedUsers.map(
+        (uid) => {'userId': uid, 'isCreator': false},
+      ),
+    ];
+
+    if (allParticipants.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -459,7 +466,7 @@ class _RideDetailBottomSheetState extends State<RideDetailBottomSheet> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Joined Passengers (${widget.trip.joinedUsers.length})',
+                'Trip Participants (${allParticipants.length})',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -469,20 +476,28 @@ class _RideDetailBottomSheetState extends State<RideDetailBottomSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          ...widget.trip.joinedUsers
-              .map((userId) => _buildJoinedUserCard(userId))
-              ,
+          ...allParticipants.map((participant) {
+            final userId = participant['userId'] as String;
+            final isCreator = participant['isCreator'] as bool;
+            return _buildParticipantCard(userId, isCreator: isCreator);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildJoinedUserCard(String userId) {
-    final userData = _joinedUsersData[userId];
-    final userDetails = userData?['details'] as Map<String, dynamic>?;
-    final privacy = _joinedUsersPrivacy[userId];
+  Widget _buildParticipantCard(String userId, {bool isCreator = false}) {
+    final userData = isCreator ? null : _joinedUsersData[userId];
 
-    final userName = userDetails?['fullName'] ?? 'Unknown User';
+    final userDetails = isCreator
+        ? widget.trip.creatorDetails
+        : (userData?['details'] as Map<String, dynamic>?);
+
+    final privacy = isCreator ? _creatorPrivacy : _joinedUsersPrivacy[userId];
+
+    final userName = isCreator
+        ? widget.trip.creatorName
+        : userDetails?['fullName'] ?? 'Unknown User';
     final userEmail = userDetails?['email'] ?? '';
 
     return Container(
@@ -491,7 +506,12 @@ class _RideDetailBottomSheetState extends State<RideDetailBottomSheet> {
       decoration: BoxDecoration(
         color: AppColors.darkBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider, width: 1),
+        border: Border.all(
+          color: isCreator
+              ? AppColors.primaryYellow.withOpacity(0.3)
+              : AppColors.divider,
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -510,20 +530,45 @@ class _RideDetailBottomSheetState extends State<RideDetailBottomSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  userName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isCreator)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryYellow.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Creator',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryYellow,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   userEmail,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
@@ -534,33 +579,122 @@ class _RideDetailBottomSheetState extends State<RideDetailBottomSheet> {
             ),
           ),
 
-          InkWell(
-            onTap: () => _showUserDetailsDialog(userId, userData, privacy),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primaryYellow.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.primaryYellow.withOpacity(0.3),
-                  width: 1,
+          if (!isCreator)
+            InkWell(
+              onTap: () => _showUserDetailsDialog(userId, userData, privacy),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-              ),
-              child: const Text(
-                'Details',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryYellow,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primaryYellow.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: const Text(
+                  'Details',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryYellow,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
+
+  // Widget _buildJoinedUserCard(String userId) {
+  //   final userData = _joinedUsersData[userId];
+  //   final userDetails = userData?['details'] as Map<String, dynamic>?;
+  //   final privacy = _joinedUsersPrivacy[userId];
+
+  //   final userName = userDetails?['fullName'] ?? 'Unknown User';
+  //   final userEmail = userDetails?['email'] ?? '';
+
+  //   return Container(
+  //     margin: const EdgeInsets.only(bottom: 12),
+  //     padding: const EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.darkBackground,
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(color: AppColors.divider, width: 1),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         FutureBuilder<Widget>(
+  //           future: _buildUserProfileImage(userId, userDetails, privacy),
+  //           builder: (context, snapshot) {
+  //             if (snapshot.hasData) {
+  //               return snapshot.data!;
+  //             }
+  //             return _buildDefaultUserProfileImage();
+  //           },
+  //         ),
+  //         const SizedBox(width: 12),
+
+  //         Expanded(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text(
+  //                 userName,
+  //                 style: const TextStyle(
+  //                   fontSize: 16,
+  //                   fontWeight: FontWeight.bold,
+  //                   color: AppColors.textPrimary,
+  //                 ),
+  //                 maxLines: 1,
+  //                 overflow: TextOverflow.ellipsis,
+  //               ),
+  //               const SizedBox(height: 4),
+  //               Text(
+  //                 userEmail,
+  //                 style: TextStyle(
+  //                   fontSize: 13,
+  //                   color: AppColors.textSecondary,
+  //                 ),
+  //                 maxLines: 1,
+  //                 overflow: TextOverflow.ellipsis,
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+
+  //         InkWell(
+  //           onTap: () => _showUserDetailsDialog(userId, userData, privacy),
+  //           borderRadius: BorderRadius.circular(8),
+  //           child: Container(
+  //             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //             decoration: BoxDecoration(
+  //               color: AppColors.primaryYellow.withOpacity(0.1),
+  //               borderRadius: BorderRadius.circular(8),
+  //               border: Border.all(
+  //                 color: AppColors.primaryYellow.withOpacity(0.3),
+  //                 width: 1,
+  //               ),
+  //             ),
+  //             child: const Text(
+  //               'Details',
+  //               style: TextStyle(
+  //                 fontSize: 12,
+  //                 fontWeight: FontWeight.w600,
+  //                 color: AppColors.primaryYellow,
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Future<Widget> _buildUserProfileImage(
     String userId,

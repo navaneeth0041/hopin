@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/trip.dart';
@@ -9,6 +7,10 @@ class MyTripCard extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onComplete;
   final VoidCallback? onViewDetails;
+  final bool showRequestsButton;
+  final VoidCallback? onViewRequests;
+  final bool showLeaveButton;
+  final VoidCallback? onLeave;
 
   const MyTripCard({
     super.key,
@@ -16,6 +18,10 @@ class MyTripCard extends StatelessWidget {
     this.onCancel,
     this.onComplete,
     this.onViewDetails,
+    this.showRequestsButton = false,
+    this.onViewRequests,
+    this.showLeaveButton = false,
+    this.onLeave,
   });
 
   String _formatDate(DateTime dateTime) {
@@ -115,13 +121,13 @@ class MyTripCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           size: 16,
                           color: AppColors.textSecondary,
                         ),
                         const SizedBox(width: 4),
-                        Text(
+                        const Text(
                           'Details',
                           style: TextStyle(
                             fontSize: 12,
@@ -136,6 +142,7 @@ class MyTripCard extends StatelessWidget {
               ],
             ),
           ),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -144,7 +151,7 @@ class MyTripCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'From',
                         style: TextStyle(
                           fontSize: 11,
@@ -175,7 +182,7 @@ class MyTripCard extends StatelessWidget {
                           Container(
                             width: 4,
                             height: 4,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.textSecondary,
                               shape: BoxShape.circle,
                             ),
@@ -184,7 +191,7 @@ class MyTripCard extends StatelessWidget {
                           Container(
                             width: 4,
                             height: 4,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.textSecondary,
                               shape: BoxShape.circle,
                             ),
@@ -193,13 +200,13 @@ class MyTripCard extends StatelessWidget {
                           Container(
                             width: 4,
                             height: 4,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.textSecondary,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 3),
-                          Icon(
+                          const Icon(
                             Icons.arrow_forward,
                             size: 16,
                             color: AppColors.primaryYellow,
@@ -213,7 +220,7 @@ class MyTripCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(
+                      const Text(
                         'To',
                         style: TextStyle(
                           fontSize: 11,
@@ -238,7 +245,9 @@ class MyTripCard extends StatelessWidget {
               ],
             ),
           ),
+
           const SizedBox(height: 16),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -246,7 +255,7 @@ class MyTripCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.calendar_today,
                       size: 16,
                       color: AppColors.textSecondary,
@@ -254,7 +263,7 @@ class MyTripCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       _formatDate(trip.departureTime),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -264,7 +273,7 @@ class MyTripCard extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.access_time,
                       size: 16,
                       color: AppColors.textSecondary,
@@ -272,7 +281,7 @@ class MyTripCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       _formatTime(trip.departureTime),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -282,7 +291,7 @@ class MyTripCard extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.event_seat,
                       size: 16,
                       color: AppColors.textSecondary,
@@ -290,7 +299,7 @@ class MyTripCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       '${trip.totalSeats - trip.availableSeats}/${trip.totalSeats} seats',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
@@ -301,6 +310,7 @@ class MyTripCard extends StatelessWidget {
               ],
             ),
           ),
+
           if (trip.note != null && trip.note!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Padding(
@@ -315,7 +325,7 @@ class MyTripCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.note_alt_outlined,
                       size: 16,
                       color: AppColors.primaryYellow,
@@ -324,7 +334,7 @@ class MyTripCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         trip.note!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
                           height: 1.4,
@@ -338,9 +348,36 @@ class MyTripCard extends StatelessWidget {
               ),
             ),
           ],
+
+          if (showRequestsButton && onViewRequests != null) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onViewRequests,
+                  icon: const Icon(Icons.inbox, size: 18),
+                  label: const Text('View Join Requests'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryYellow,
+                    side: BorderSide(
+                      color: AppColors.primaryYellow.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
           if ((trip.status == TripStatus.active ||
                   trip.status == TripStatus.full) &&
-              (onCancel != null || onComplete != null)) ...[
+              (onCancel != null || onComplete != null || onLeave != null)) ...[
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -370,7 +407,32 @@ class MyTripCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (onCancel != null && onComplete != null)
+                  if (onLeave != null)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onLeave,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.accentRed,
+                          side: BorderSide(
+                            color: AppColors.accentRed.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Leave',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if ((onCancel != null || onLeave != null) &&
+                      onComplete != null)
                     const SizedBox(width: 12),
                   if (onComplete != null)
                     Expanded(

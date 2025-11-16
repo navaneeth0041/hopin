@@ -10,12 +10,14 @@ class RideCard extends StatelessWidget {
   final Trip trip;
   final VoidCallback onJoinRide;
   final VoidCallback onViewDetails;
+  final bool hasRequestedJoin;
 
   const RideCard({
     super.key,
     required this.trip,
     required this.onJoinRide,
     required this.onViewDetails,
+    this.hasRequestedJoin = false,
   });
 
   String _formatDate(DateTime dateTime) {
@@ -344,10 +346,16 @@ class RideCard extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: trip.availableSeats > 0 ? onJoinRide : null,
+                onPressed: (trip.availableSeats > 0 && !hasRequestedJoin)
+                    ? onJoinRide
+                    : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryYellow,
-                  foregroundColor: Colors.black,
+                  backgroundColor: hasRequestedJoin
+                      ? AppColors.textSecondary
+                      : AppColors.primaryYellow,
+                  foregroundColor: hasRequestedJoin
+                      ? Colors.white
+                      : Colors.black,
                   disabledBackgroundColor: AppColors.divider,
                   disabledForegroundColor: AppColors.textSecondary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -356,12 +364,25 @@ class RideCard extends StatelessWidget {
                   ),
                   elevation: 0,
                 ),
-                child: Text(
-                  trip.availableSeats > 0 ? 'Join Ride' : 'Full',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (hasRequestedJoin) ...[
+                      const Icon(Icons.schedule, size: 18),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      hasRequestedJoin
+                          ? 'Request Pending'
+                          : trip.availableSeats > 0
+                          ? 'Join Ride'
+                          : 'Full',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

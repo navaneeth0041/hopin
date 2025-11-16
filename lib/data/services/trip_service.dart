@@ -149,62 +149,49 @@ class TripService {
   }
 
   Stream<List<Trip>> getActiveTrips() {
-    try {
-      return _tripsCollection
-          .where('status', isEqualTo: 'active')
-          .snapshots()
-          .map((snapshot) {
-            final now = DateTime.now();
-            return snapshot.docs
-                .map(
-                  (doc) =>
-                      Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-                )
-                .where((trip) => trip.departureTime.isAfter(now))
-                .toList()
-              ..sort((a, b) => a.departureTime.compareTo(b.departureTime));
-          });
-    } catch (e) {
-      return Stream.value([]);
-    }
+    return _tripsCollection
+        .where('status', isEqualTo: 'active')
+        .where('departureTime', isGreaterThan: Timestamp.now())
+        .orderBy('departureTime', descending: false)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map(
+                (doc) =>
+                    Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+              )
+              .toList();
+        });
   }
 
   Stream<List<Trip>> getUserCreatedTrips(String userId) {
-    try {
-      return _tripsCollection
-          .where('createdBy', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((snapshot) {
-            return snapshot.docs
-                .map(
-                  (doc) =>
-                      Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-                )
-                .toList();
-          });
-    } catch (e) {
-      return Stream.value([]);
-    }
+    return _tripsCollection
+        .where('createdBy', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map(
+                (doc) =>
+                    Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+              )
+              .toList();
+        });
   }
 
   Stream<List<Trip>> getUserJoinedTrips(String userId) {
-    try {
-      return _tripsCollection
-          .where('joinedUsers', arrayContains: userId)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((snapshot) {
-            return snapshot.docs
-                .map(
-                  (doc) =>
-                      Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-                )
-                .toList();
-          });
-    } catch (e) {
-      return Stream.value([]);
-    }
+    return _tripsCollection
+        .where('joinedUsers', arrayContains: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map(
+                (doc) =>
+                    Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+              )
+              .toList();
+        });
   }
 
   Future<Trip?> getTripById(String tripId) async {
@@ -309,25 +296,21 @@ class TripService {
   }
 
   Stream<List<Trip>> searchTripsByDestination(String destination) {
-    try {
-      return _tripsCollection
-          .where('status', isEqualTo: 'active')
-          .where('destination', isGreaterThanOrEqualTo: destination)
-          .where('destination', isLessThanOrEqualTo: '$destination\uf8ff')
-          .orderBy('destination')
-          .orderBy('departureTime')
-          .snapshots()
-          .map((snapshot) {
-            return snapshot.docs
-                .map(
-                  (doc) =>
-                      Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-                )
-                .toList();
-          });
-    } catch (e) {
-      return Stream.value([]);
-    }
+    return _tripsCollection
+        .where('status', isEqualTo: 'active')
+        .where('destination', isGreaterThanOrEqualTo: destination)
+        .where('destination', isLessThanOrEqualTo: '$destination\uf8ff')
+        .orderBy('destination')
+        .orderBy('departureTime')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map(
+                (doc) =>
+                    Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+              )
+              .toList();
+        });
   }
 
   Future<bool> deleteTrip(String tripId, String userId) async {
@@ -349,6 +332,7 @@ class TripService {
 
       return true;
     } catch (e) {
+      print('Error deleting trip: $e');
       return false;
     }
   }
@@ -373,27 +357,23 @@ class TripService {
   Stream<List<Trip>> getUpcomingTripsForUser(String userId) {
     final now = Timestamp.now();
 
-    try {
-      return _tripsCollection
-          .where('status', whereIn: ['active', 'full'])
-          .where('departureTime', isGreaterThan: now)
-          .orderBy('departureTime')
-          .snapshots()
-          .map((snapshot) {
-            return snapshot.docs
-                .map(
-                  (doc) =>
-                      Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-                )
-                .where(
-                  (trip) =>
-                      trip.createdBy == userId ||
-                      trip.joinedUsers.contains(userId),
-                )
-                .toList();
-          });
-    } catch (e) {
-      return Stream.value([]);
-    }
+    return _tripsCollection
+        .where('status', whereIn: ['active', 'full'])
+        .where('departureTime', isGreaterThan: now)
+        .orderBy('departureTime')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map(
+                (doc) =>
+                    Trip.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+              )
+              .where(
+                (trip) =>
+                    trip.createdBy == userId ||
+                    trip.joinedUsers.contains(userId),
+              )
+              .toList();
+        });
   }
 }

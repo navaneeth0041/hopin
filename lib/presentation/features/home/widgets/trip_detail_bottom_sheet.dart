@@ -1,13 +1,105 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/trip.dart';
+import 'package:hopin/data/models/privacy_settings_model.dart';
+import 'package:hopin/data/services/privacy_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 
-class TripDetailBottomSheet extends StatelessWidget {
+class TripDetailBottomSheet extends StatefulWidget {
   final Trip trip;
 
   const TripDetailBottomSheet({super.key, required this.trip});
+
+  @override
+  State<TripDetailBottomSheet> createState() => _TripDetailBottomSheetState();
+}
+
+class _TripDetailBottomSheetState extends State<TripDetailBottomSheet> {
+  final PrivacyService _privacyService = PrivacyService();
+  PrivacySettings? _creatorPrivacy;
+  Map<String, PrivacySettings> _joinedUsersPrivacy = {};
+  Map<String, Map<String, dynamic>> _joinedUsersData = {};
+  bool _isLoadingPrivacy = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrivacySettings();
+    _loadJoinedUsersData();
+  }
+
+  Future<void> _loadPrivacySettings() async {
+    try {
+      final creatorPrivacy = await _privacyService.getPrivacySettings(
+        widget.trip.createdBy,
+      );
+
+      final joinedPrivacy = <String, PrivacySettings>{};
+      for (final userId in widget.trip.joinedUsers) {
+        final privacy = await _privacyService.getPrivacySettings(userId);
+        joinedPrivacy[userId] = privacy;
+      }
+
+      if (mounted) {
+        setState(() {
+          _creatorPrivacy = creatorPrivacy;
+          _joinedUsersPrivacy = joinedPrivacy;
+          _isLoadingPrivacy = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingPrivacy = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadJoinedUsersData() async {
+    try {
+      final usersData = <String, Map<String, dynamic>>{};
+
+      for (final userId in widget.trip.joinedUsers) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (userDoc.exists) {
+          usersData[userId] = userDoc.data() ?? {};
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _joinedUsersData = usersData;
+        });
+      }
+    } catch (e) {
+      return;
+    }
+  }
+
+  bool _shouldShowField(String fieldName, PrivacySettings? privacy) {
+    if (privacy == null) return false;
+    return privacy.shouldShowField(fieldName);
+  }
+
+  void _copyToClipboard(BuildContext context, String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label copied to clipboard'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
 
   String _formatDateTime(DateTime dateTime) {
     final hour = dateTime.hour > 12
@@ -22,7 +114,7 @@ class TripDetailBottomSheet extends StatelessWidget {
   }
 
   Color _getStatusColor() {
-    switch (trip.status) {
+    switch (widget.trip.status) {
       case TripStatus.active:
         return AppColors.accentGreen;
       case TripStatus.full:
@@ -35,7 +127,7 @@ class TripDetailBottomSheet extends StatelessWidget {
   }
 
   String _getStatusText() {
-    switch (trip.status) {
+    switch (widget.trip.status) {
       case TripStatus.active:
         return 'Active';
       case TripStatus.full:
@@ -49,13 +141,7 @@ class TripDetailBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final passengers = [
-      {'name': 'John Doe', 'phone': '+91 98765 43210'},
-      {'name': 'Jane Smith', 'phone': '+91 87654 32109'},
-      {'name': 'Mike Johnson', 'phone': '+91 76543 21098'},
-    ];
-
-    final filledSeats = trip.totalSeats - trip.availableSeats;
+    final filledSeats = widget.trip.totalSeats - widget.trip.availableSeats;
 
     return Container(
       decoration: const BoxDecoration(
@@ -82,12 +168,9 @@ class TripDetailBottomSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: const Text(
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Text(
                   'Trip Details',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -124,10 +207,10 @@ class TripDetailBottomSheet extends StatelessWidget {
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                trip.status == TripStatus.active ||
-                                        trip.status == TripStatus.full
+                                widget.trip.status == TripStatus.active ||
+                                        widget.trip.status == TripStatus.full
                                     ? Icons.directions_car
-                                    : trip.status == TripStatus.completed
+                                    : widget.trip.status == TripStatus.completed
                                     ? Icons.check_circle
                                     : Icons.cancel,
                                 color: _getStatusColor(),
@@ -139,7 +222,7 @@ class TripDetailBottomSheet extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     'Status',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -164,23 +247,101 @@ class TripDetailBottomSheet extends StatelessWidget {
                       const SizedBox(height: 16),
 
                       _buildSectionCard(
+                        title: 'Trip Creator',
+                        icon: Icons.person,
+                        children: [
+                          _buildDetailRow(
+                            icon: Icons.account_circle,
+                            label: 'Name',
+                            value: widget.trip.creatorName,
+                          ),
+                          if (widget.trip.creatorDetails?['email'] != null &&
+                              widget.trip.creatorDetails!['email']
+                                  .toString()
+                                  .isNotEmpty)
+                            _buildDetailRow(
+                              icon: Icons.email,
+                              label: 'Email',
+                              value: widget.trip.creatorDetails!['email'],
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.copy,
+                                  size: 18,
+                                  color: AppColors.primaryYellow,
+                                ),
+                                onPressed: () => _copyToClipboard(
+                                  context,
+                                  widget.trip.creatorDetails!['email'],
+                                  'Email',
+                                ),
+                              ),
+                            ),
+                          if (widget.trip.creatorDetails?['phone'] != null &&
+                              widget.trip.creatorDetails!['phone']
+                                  .toString()
+                                  .isNotEmpty)
+                            _buildDetailRow(
+                              icon: Icons.phone,
+                              label: 'Contact',
+                              value: widget.trip.creatorDetails!['phone'],
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.copy,
+                                  size: 18,
+                                  color: AppColors.primaryYellow,
+                                ),
+                                onPressed: () => _copyToClipboard(
+                                  context,
+                                  widget.trip.creatorDetails!['phone'],
+                                  'Phone number',
+                                ),
+                              ),
+                            ),
+                          if (!_isLoadingPrivacy &&
+                              _shouldShowField('department', _creatorPrivacy) &&
+                              widget.trip.creatorDetails?['department'] !=
+                                  null &&
+                              widget.trip.creatorDetails!['department']
+                                  .toString()
+                                  .isNotEmpty)
+                            _buildDetailRow(
+                              icon: Icons.school,
+                              label: 'Department',
+                              value: widget.trip.creatorDetails!['department'],
+                            ),
+                          if (!_isLoadingPrivacy &&
+                              _shouldShowField('year', _creatorPrivacy) &&
+                              widget.trip.creatorDetails?['year'] != null &&
+                              widget.trip.creatorDetails!['year']
+                                  .toString()
+                                  .isNotEmpty)
+                            _buildDetailRow(
+                              icon: Icons.calendar_month,
+                              label: 'Year',
+                              value: widget.trip.creatorDetails!['year'],
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      _buildSectionCard(
                         title: 'Route Information',
                         icon: Icons.route,
                         children: [
                           _buildDetailRow(
                             icon: Icons.my_location,
                             label: 'From',
-                            value: trip.currentLocation,
+                            value: widget.trip.currentLocation,
                           ),
                           _buildDetailRow(
                             icon: Icons.location_on,
                             label: 'To',
-                            value: trip.destination,
+                            value: widget.trip.destination,
                           ),
                           _buildDetailRow(
                             icon: Icons.schedule,
                             label: 'Departure',
-                            value: _formatDateTime(trip.departureTime),
+                            value: _formatDateTime(widget.trip.departureTime),
                           ),
                         ],
                       ),
@@ -193,7 +354,7 @@ class TripDetailBottomSheet extends StatelessWidget {
                           _buildDetailRow(
                             icon: Icons.airline_seat_recline_normal,
                             label: 'Total Seats',
-                            value: '${trip.totalSeats} seats',
+                            value: '${widget.trip.totalSeats} seats',
                           ),
                           _buildDetailRow(
                             icon: Icons.people,
@@ -206,8 +367,8 @@ class TripDetailBottomSheet extends StatelessWidget {
                           _buildDetailRow(
                             icon: Icons.event_seat_outlined,
                             label: 'Available Seats',
-                            value: '${trip.availableSeats} seats',
-                            valueColor: trip.availableSeats > 0
+                            value: '${widget.trip.availableSeats} seats',
+                            valueColor: widget.trip.availableSeats > 0
                                 ? AppColors.primaryYellow
                                 : AppColors.accentRed,
                           ),
@@ -215,29 +376,14 @@ class TripDetailBottomSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      if (filledSeats > 0)
-                        _buildSectionCard(
-                          title: 'Passengers ($filledSeats)',
-                          icon: Icons.people_alt,
-                          children: [
-                            ...List.generate(
-                              filledSeats,
-                              (index) => _buildPassengerCard(
-                                name:
-                                    passengers[index %
-                                        passengers.length]['name']!,
-                                phone:
-                                    passengers[index %
-                                        passengers.length]['phone']!,
-                                isLast: index == filledSeats - 1,
-                              ),
-                            ),
-                          ],
-                        ),
+                      if (widget.trip.joinedUsers.isNotEmpty || filledSeats > 0)
+                        _buildParticipantsSection(),
 
-                      if (filledSeats > 0) const SizedBox(height: 16),
+                      if (widget.trip.joinedUsers.isNotEmpty || filledSeats > 0)
+                        const SizedBox(height: 16),
 
-                      if (trip.note != null && trip.note!.isNotEmpty)
+                      if (widget.trip.note != null &&
+                          widget.trip.note!.isNotEmpty)
                         _buildSectionCard(
                           title: 'Additional Notes',
                           icon: Icons.note,
@@ -249,8 +395,8 @@ class TripDetailBottomSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                trip.note!,
-                                style: TextStyle(
+                                widget.trip.note!,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textPrimary,
                                   height: 1.5,
@@ -267,6 +413,405 @@ class TripDetailBottomSheet extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildParticipantsSection() {
+    final allParticipants = [
+      {'userId': widget.trip.createdBy, 'isCreator': true},
+      ...widget.trip.joinedUsers.map(
+        (uid) => {'userId': uid, 'isCreator': false},
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.divider, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.people_alt,
+                  color: AppColors.primaryYellow,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Trip Participants (${allParticipants.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...allParticipants.asMap().entries.map((entry) {
+            final index = entry.key;
+            final participant = entry.value;
+            final userId = participant['userId'] as String;
+            final isCreator = participant['isCreator'] as bool;
+            final isLast = index == allParticipants.length - 1;
+            return _buildParticipantCard(
+              userId,
+              isCreator: isCreator,
+              isLast: isLast,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParticipantCard(
+    String userId, {
+    bool isCreator = false,
+    bool isLast = false,
+  }) {
+    final userData = isCreator ? null : _joinedUsersData[userId];
+    final userDetails = isCreator
+        ? widget.trip.creatorDetails
+        : (userData?['details'] as Map<String, dynamic>?);
+    final privacy = isCreator ? _creatorPrivacy : _joinedUsersPrivacy[userId];
+
+    final userName = isCreator
+        ? widget.trip.creatorName
+        : userDetails?['fullName'] ?? 'Unknown User';
+    final userEmail = userDetails?['email'] ?? '';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.darkBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCreator
+              ? AppColors.primaryYellow.withOpacity(0.3)
+              : AppColors.divider,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          FutureBuilder<Widget>(
+            future: _buildUserProfileImage(userId, userDetails, privacy),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return snapshot.data!;
+              }
+              return _buildDefaultUserProfileImage();
+            },
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isCreator)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryYellow.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Creator',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryYellow,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  userEmail,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (!isCreator && userDetails != null)
+            InkWell(
+              onTap: () => _showUserDetailsDialog(userId, userData, privacy),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryYellow.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primaryYellow.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: const Text(
+                  'Details',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryYellow,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<Widget> _buildUserProfileImage(
+    String userId,
+    Map<String, dynamic>? userDetails,
+    PrivacySettings? privacy,
+  ) async {
+    if (!_shouldShowField('profilePicture', privacy)) {
+      return _buildDefaultUserProfileImage();
+    }
+
+    try {
+      final base64Image = userDetails?['profileImageBase64'] as String?;
+
+      if (base64Image != null && base64Image.isNotEmpty) {
+        try {
+          final Uint8List bytes = base64Decode(base64Image);
+          return Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                image: MemoryImage(bytes),
+                fit: BoxFit.cover,
+              ),
+              border: Border.all(color: AppColors.primaryYellow, width: 2),
+            ),
+          );
+        } catch (e) {
+          return _buildDefaultUserProfileImage();
+        }
+      }
+    } catch (e) {
+      return _buildDefaultUserProfileImage();
+    }
+
+    return _buildDefaultUserProfileImage();
+  }
+
+  Widget _buildDefaultUserProfileImage() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.primaryYellow.withOpacity(0.2),
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.primaryYellow, width: 2),
+      ),
+      child: const Icon(Icons.person, color: AppColors.primaryYellow, size: 20),
+    );
+  }
+
+  void _showUserDetailsDialog(
+    String userId,
+    Map<String, dynamic>? userData,
+    PrivacySettings? privacy,
+  ) {
+    final userDetails = userData?['details'] as Map<String, dynamic>?;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            FutureBuilder<Widget>(
+              future: _buildUserProfileImage(userId, userDetails, privacy),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return snapshot.data!;
+                }
+                return _buildDefaultUserProfileImage();
+              },
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                userDetails?['fullName'] ?? 'User Details',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (userDetails?['email'] != null)
+                _buildDialogDetailRow(
+                  icon: Icons.email,
+                  label: 'Email',
+                  value: userDetails!['email'],
+                ),
+              if (userDetails?['phoneNumber'] != null)
+                _buildDialogDetailRow(
+                  icon: Icons.phone,
+                  label: 'Phone',
+                  value: userDetails!['phoneNumber'],
+                ),
+              if (_shouldShowField('department', privacy) &&
+                  userDetails?['department'] != null)
+                _buildDialogDetailRow(
+                  icon: Icons.school,
+                  label: 'Department',
+                  value: userDetails!['department'],
+                ),
+              if (_shouldShowField('year', privacy) &&
+                  userDetails?['year'] != null)
+                _buildDialogDetailRow(
+                  icon: Icons.calendar_month,
+                  label: 'Year',
+                  value: userDetails!['year'],
+                ),
+              if (_shouldShowField('hostel', privacy) &&
+                  userDetails?['hostel'] != null)
+                _buildDialogDetailRow(
+                  icon: Icons.home,
+                  label: 'Hostel',
+                  value: userDetails!['hostel'],
+                ),
+              if (_shouldShowField('hometown', privacy) &&
+                  userDetails?['hometown'] != null)
+                _buildDialogDetailRow(
+                  icon: Icons.location_city,
+                  label: 'Hometown',
+                  value: userDetails!['hometown'],
+                ),
+              if (_shouldShowField('bio', privacy) &&
+                  userDetails?['bio'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Bio',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        userDetails!['bio'],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Close',
+              style: TextStyle(
+                color: AppColors.primaryYellow,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDialogDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -319,6 +864,7 @@ class TripDetailBottomSheet extends StatelessWidget {
     required String label,
     required String value,
     Color? valueColor,
+    Widget? trailing,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -332,7 +878,7 @@ class TripDetailBottomSheet extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -349,59 +895,7 @@ class TripDetailBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPassengerCard({
-    required String name,
-    required String phone,
-    bool isLast = false,
-  }) {
-    return Container(
-      margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.darkBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider, width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primaryYellow.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.person, color: AppColors.primaryYellow, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  phone,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.check_circle, color: AppColors.accentGreen, size: 20),
+          if (trailing != null) trailing,
         ],
       ),
     );

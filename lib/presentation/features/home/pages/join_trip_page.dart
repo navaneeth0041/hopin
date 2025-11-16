@@ -1,9 +1,9 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/trip.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
+import 'package:hopin/data/services/trip_request_service.dart';
+import 'package:hopin/data/services/trip_validation_service.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/ride_card.dart';
@@ -23,14 +23,28 @@ class _JoinTripPageState extends State<JoinTripPage> {
   String selectedTimeFilter = 'All';
   RideFilterOptions advancedFilters = RideFilterOptions();
   String? currentUserId;
+  final TripRequestService _requestService = TripRequestService();
+  Set<String> _requestedTripIds = {};
 
   @override
   void initState() {
     super.initState();
     currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    _loadPendingRequests();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTrips();
     });
+  }
+
+  void _loadPendingRequests() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      _requestService.getUserPendingRequests(userId).listen((requests) {
+        setState(() {
+          _requestedTripIds = requests.map((r) => r.tripId).toSet();
+        });
+      });
+    }
   }
 
   void _loadTrips() {
@@ -41,9 +55,13 @@ class _JoinTripPageState extends State<JoinTripPage> {
   List<Trip> _getFilteredTrips(List<Trip> allTrips) {
     if (currentUserId == null) return [];
 
-    List<Trip> userFilteredTrips = allTrips
-        .where((trip) => trip.createdBy != currentUserId)
-        .toList();
+    List<Trip> userFilteredTrips = allTrips.where((trip) {
+      if (trip.createdBy == currentUserId) return false;
+
+      if (trip.joinedUsers.contains(currentUserId)) return false;
+
+      return true;
+    }).toList();
 
     List<Trip> timeFiltered = userFilteredTrips.where((trip) {
       return _matchesTimeFilter(trip);
@@ -53,7 +71,6 @@ class _JoinTripPageState extends State<JoinTripPage> {
       if (advancedFilters.minSeats != null) {
         if (trip.availableSeats < advancedFilters.minSeats!) return false;
       }
-
       return true;
     }).toList();
 
@@ -136,6 +153,26 @@ class _JoinTripPageState extends State<JoinTripPage> {
   }
 
   void _handleJoinRide(Trip trip) async {
+    final requestService = TripRequestService();
+    final validationService = TripValidationService();
+
+    final validation = await validationService.canJoinTrip(
+      userId: FirebaseAuth.instance.currentUser!.uid,
+      tripId: trip.id,
+    );
+
+    if (!validation['valid']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(validation['error']),
+            backgroundColor: AppColors.accentRed,
+          ),
+        );
+      }
+      return;
+    }
+
     String noteText = '';
 
     final result = await showDialog<bool>(
@@ -148,210 +185,27 @@ class _JoinTripPageState extends State<JoinTripPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-          title: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryYellow.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.directions_car,
-                  color: AppColors.primaryYellow,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Join Ride',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
+          title: const Text(
+            'Send Join Request',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                      children: [
-                        const TextSpan(text: 'You\'re requesting to join '),
-                        TextSpan(
-                          text: trip.creatorName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const TextSpan(text: '\'s ride'),
-                      ],
-                    ),
+                Text(
+                  'Send a request to join ${trip.creatorName}\'s trip?',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.darkBackground,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.divider, width: 1),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryYellow.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.my_location,
-                              size: 16,
-                              color: AppColors.primaryYellow,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'From',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  trip.currentLocation,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 18),
-                            Container(
-                              width: 2,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppColors.primaryYellow.withOpacity(0.3),
-                                    AppColors.accentGreen.withOpacity(0.3),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentGreen.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: AppColors.accentGreen,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'To',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  trip.destination,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentBlue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(
-                        Icons.message,
-                        color: AppColors.accentBlue,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Add a message',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '(optional)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 TextField(
                   controller: noteController,
                   maxLines: 3,
@@ -364,11 +218,9 @@ class _JoinTripPageState extends State<JoinTripPage> {
                     fontSize: 14,
                   ),
                   decoration: InputDecoration(
-                    hintText:
-                        'e.g., "I have 2 luggage bags" or "Running 5 mins late"',
+                    hintText: 'Add a message (optional)',
                     hintStyle: TextStyle(
                       color: AppColors.textSecondary.withOpacity(0.5),
-                      fontSize: 13,
                     ),
                     filled: true,
                     fillColor: AppColors.darkBackground,
@@ -376,81 +228,23 @@ class _JoinTripPageState extends State<JoinTripPage> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: AppColors.divider,
-                        width: 1,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primaryYellow,
-                        width: 1.5,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.all(12),
-                    counterStyle: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontSize: 11,
-                    ),
                   ),
                 ),
               ],
             ),
           ),
-          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(false);
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: AppColors.divider, width: 1),
-                      ),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(true);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryYellow,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Send Request',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryYellow,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Send Request'),
             ),
           ],
         );
@@ -458,59 +252,22 @@ class _JoinTripPageState extends State<JoinTripPage> {
     );
 
     if (result == true && mounted) {
-      final tripProvider = Provider.of<TripProvider>(context, listen: false);
-      final success = await tripProvider.joinTrip(trip.id);
+      final requestResult = await requestService.createTripRequest(
+        tripId: trip.id,
+        message: noteText.isEmpty ? null : noteText,
+      );
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: AppColors.accentGreen,
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Successfully joined ${trip.creatorName}\'s ride',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.cardBackground,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      } else if (mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              tripProvider.errorMessage ?? 'Failed to join ride',
-              style: const TextStyle(color: AppColors.textPrimary),
+              requestResult['success']
+                  ? 'Request sent successfully!'
+                  : requestResult['error'] ?? 'Failed to send request',
             ),
-            backgroundColor: AppColors.accentRed,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
+            backgroundColor: requestResult['success']
+                ? AppColors.accentGreen
+                : AppColors.accentRed,
           ),
         );
       }
@@ -640,6 +397,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
                           trip: trip,
                           onJoinRide: () => _handleJoinRide(trip),
                           onViewDetails: () => _showRideDetails(trip),
+                          hasRequestedJoin: _requestedTripIds.contains(trip.id),
                         );
                       },
                     ),

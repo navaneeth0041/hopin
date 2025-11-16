@@ -39,4 +39,5 @@ class RouteNames {
   static const String tripDetails = '/trip-details';
 
   static const String myReport = '/my-reports';
+  static const String notifications = '/notifications';
 }

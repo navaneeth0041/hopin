@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
+import 'package:hopin/presentation/features/notifications/notifications_screen.dart';
 import 'package:hopin/presentation/features/profile/edit_profile_screen.dart';
 import 'package:hopin/presentation/features/report_support/my_reports_screen.dart';
 import 'package:hopin/presentation/features/settings/blocked_users_screen.dart';
@@ -43,6 +44,7 @@ class AppRoutes {
       RouteNames.myReport: (context) => const MyReportsScreen(),
       RouteNames.blockedUsers: (context) => const BlockedUsersScreen(),
       RouteNames.privacy: (context) => const PrivacySettingsScreen(),
+      RouteNames.notifications: (context) => const NotificationsScreen(),
     };
   }
 
@@ -109,6 +111,11 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => const PrivacySettingsScreen(),
         );
+     case RouteNames.notifications:
+        return MaterialPageRoute(
+          builder: (context) =>  NotificationsScreen(),
+        );
+
 
       case RouteNames.tripHistory:
       case RouteNames.notificationSettings:
