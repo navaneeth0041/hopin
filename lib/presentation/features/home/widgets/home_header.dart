@@ -107,8 +107,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
+import 'package:hopin/data/providers/user_profile_provider.dart';
 import 'package:hopin/data/services/trip_request_service.dart';
 import 'package:hopin/presentation/features/notifications/notifications_screen.dart';
+import 'package:provider/provider.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -123,12 +125,20 @@ class HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Hello, John!',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
+              Consumer<UserProfileProvider>(
+                builder: (context, profileProvider, child) {
+                  final userName = profileProvider.userProfile.name.isNotEmpty 
+                      ? profileProvider.userProfile.name.split(' ').first
+                      : 'User';
+                  
+                  return Text(
+                    'Hello, $userName!',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 8),
               Row(
