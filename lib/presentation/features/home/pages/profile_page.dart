@@ -69,14 +69,14 @@ class ProfilePage extends StatelessWidget {
 
                   const SizedBox(height: 32),
 
-                  ProfileMenuItem(
-                    icon: Icons.history,
-                    title: 'Trip History',
-                    subtitle: 'View past rides and payments',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/trip-history');
-                    },
-                  ),
+                  // ProfileMenuItem(
+                  //   icon: Icons.history,
+                  //   title: 'Trip History',
+                  //   subtitle: 'View past rides and payments',
+                  //   onTap: () {
+                  //     Navigator.pushNamed(context, '/trip-history');
+                  //   },
+                  // ),
 
                   const SizedBox(height: 16),
 
