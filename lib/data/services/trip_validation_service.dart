@@ -7,13 +7,17 @@ class TripValidationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
 
+  static const int maxActiveTripsAsCreator = 1;
   static const int maxTripsPerDay = 3;
   static const int maxJoinAttemptsPerDay = 10;
   static const int cooldownAfterCancellations = 2;
   static const int maxPendingRequests = 5;
+  static const int maxSimultaneousActiveTrips = 2;
 
   static const double maxTripRadiusKm = 100.0;
   static const double localRegionRadiusKm = 50.0;
+
+  static const int tripBufferMinutes = 30;
 
   Future<Map<String, dynamic>> canCreateTrip({
     required String userId,
@@ -25,20 +29,49 @@ class TripValidationService {
     required Position? destinationLocation,
   }) async {
     try {
-      if (startTime.isBefore(DateTime.now())) {
+      final now = DateTime.now();
+      if (startTime.isBefore(now)) {
         return {'valid': false, 'error': 'Start time cannot be in the past'};
+      }
+
+      if (startTime.isBefore(now.add(const Duration(minutes: 15)))) {
+        return {
+          'valid': false,
+          'error': 'Trip must be scheduled at least 15 minutes in advance',
+        };
       }
 
       if (endTime.isBefore(startTime) || endTime.isAtSameMomentAs(startTime)) {
         return {'valid': false, 'error': 'End time must be after start time'};
       }
 
-      if (seats < 1 || seats > 6) {
-        return {'valid': false, 'error': 'Seats must be between 1 and 6'};
+      final tripDuration = endTime.difference(startTime);
+      if (tripDuration.inHours > 12) {
+        return {
+          'valid': false,
+          'error': 'Trip duration cannot exceed 12 hours',
+        };
       }
 
-      if (destination.trim().isEmpty) {
-        return {'valid': false, 'error': 'Destination cannot be empty'};
+      if (tripDuration.inMinutes < 10) {
+        return {
+          'valid': false,
+          'error': 'Trip duration must be at least 10 minutes',
+        };
+      }
+
+      if (seats < 1 || seats > 6) {
+        return {
+          'valid': false,
+          'error': 'Available seats must be between 1 and 6',
+        };
+      }
+
+      if (destination.trim().isEmpty || destination.trim().length < 3) {
+        return {
+          'valid': false,
+          'error': 'Please provide a valid destination (minimum 3 characters)',
+        };
       }
 
       if (userLocation != null && destinationLocation != null) {
@@ -49,6 +82,14 @@ class TripValidationService {
           destinationLocation.longitude,
         );
 
+        if (distance < 0.5) {
+          return {
+            'valid': false,
+            'error':
+                'Pickup and destination locations are too close (minimum 500m)',
+          };
+        }
+
         if (distance > maxTripRadiusKm) {
           return {
             'valid': false,
@@ -58,11 +99,26 @@ class TripValidationService {
         }
       }
 
-      final hasOverlap = await _hasOverlappingTrip(userId, startTime, endTime);
+      final activeCreatorTrips = await _getActiveCreatorTrips(userId);
+      if (activeCreatorTrips.isNotEmpty) {
+        return {
+          'valid': false,
+          'error':
+              'You already have an active trip. Complete or cancel it first.',
+        };
+      }
+
+      final hasOverlap = await _hasOverlappingTrip(
+        userId,
+        startTime,
+        endTime,
+        includeBuffer: true,
+      );
       if (hasOverlap) {
         return {
           'valid': false,
-          'error': 'You already have an active trip during this time',
+          'error':
+              'This trip overlaps with another trip you\'re part of. Leave 30-minute gaps between trips.',
         };
       }
 
@@ -74,14 +130,33 @@ class TripValidationService {
       if (hasDuplicate) {
         return {
           'valid': false,
-          'error':
-              'A similar trip already exists within 5 minutes of this time',
+          'error': 'You already have a similar trip scheduled within 5 minutes',
         };
       }
 
       final rateLimitCheck = await _checkCreateRateLimit(userId);
       if (!rateLimitCheck['allowed']) {
         return {'valid': false, 'error': rateLimitCheck['error']};
+      }
+
+      final recentCancellations = await _getRecentCancellationsCount(userId);
+      if (recentCancellations >= cooldownAfterCancellations) {
+        return {
+          'valid': false,
+          'error':
+              'Too many recent cancellations. Please wait 24 hours before creating new trips.',
+        };
+      }
+
+      final totalActiveParticipation = await _getTotalActiveParticipation(
+        userId,
+      );
+      if (totalActiveParticipation >= maxSimultaneousActiveTrips) {
+        return {
+          'valid': false,
+          'error':
+              'You can only participate in $maxSimultaneousActiveTrips active trips at once',
+        };
       }
 
       return {'valid': true};
@@ -97,7 +172,7 @@ class TripValidationService {
     try {
       final tripDoc = await _firestore.collection('trips').doc(tripId).get();
       if (!tripDoc.exists) {
-        return {'valid': false, 'error': 'Trip not found'};
+        return {'valid': false, 'error': 'Trip not found or has been deleted'};
       }
 
       final tripData = tripDoc.data()!;
@@ -107,20 +182,45 @@ class TripValidationService {
           : startTime.add(const Duration(hours: 2));
       final availableSeats = tripData['availableSeats'] ?? 0;
       final creatorId = tripData['createdBy'] ?? '';
+      final status = tripData['status'] ?? 'active';
 
-      if (startTime.isBefore(DateTime.now())) {
+      if (status != 'active') {
+        return {
+          'valid': false,
+          'error': 'This trip is no longer available (Status: $status)',
+        };
+      }
+
+      final now = DateTime.now();
+      if (startTime.isBefore(now)) {
         return {
           'valid': false,
           'error': 'Cannot join a trip that has already started',
         };
       }
 
+      if (startTime.difference(now).inMinutes < 10) {
+        return {
+          'valid': false,
+          'error':
+              'Trip is starting too soon. Join at least 10 minutes before departure.',
+        };
+      }
+
       if (availableSeats <= 0) {
-        return {'valid': false, 'error': 'No available seats'};
+        return {
+          'valid': false,
+          'error': 'No available seats. This trip is full.',
+        };
       }
 
       if (creatorId == userId) {
         return {'valid': false, 'error': 'You cannot join your own trip'};
+      }
+
+      final joinedUsers = List<String>.from(tripData['joinedUsers'] ?? []);
+      if (joinedUsers.contains(userId)) {
+        return {'valid': false, 'error': 'You are already part of this trip'};
       }
 
       final existingRequest = await _firestore
@@ -137,17 +237,45 @@ class TripValidationService {
         };
       }
 
-      final joinedUsers = List<String>.from(tripData['joinedUsers'] ?? []);
-      if (joinedUsers.contains(userId)) {
-        return {'valid': false, 'error': 'You are already part of this trip'};
+      final isBlocked = await _isBlockedByUser(userId, creatorId);
+      if (isBlocked) {
+        return {'valid': false, 'error': 'You cannot join this trip'};
       }
 
-      final hasOverlap = await _hasOverlappingTrip(userId, startTime, endTime);
+      final hasOverlap = await _hasOverlappingTrip(
+        userId,
+        startTime,
+        endTime,
+        includeBuffer: true,
+      );
       if (hasOverlap) {
         return {
           'valid': false,
-          'error': 'You have another trip during this time',
+          'error':
+              'This trip conflicts with another trip you\'re part of. Maintain 30-minute gaps.',
         };
+      }
+
+      final activeCreatorTrips = await _getActiveCreatorTrips(userId);
+      if (activeCreatorTrips.isNotEmpty) {
+        for (final creatorTrip in activeCreatorTrips) {
+          final creatorStart = creatorTrip['departureTime'];
+          final creatorEnd = creatorTrip['endTime'];
+
+          if (_timeRangesOverlap(
+            startTime,
+            endTime,
+            creatorStart,
+            creatorEnd,
+            includeBuffer: true,
+          )) {
+            return {
+              'valid': false,
+              'error':
+                  'Cannot join this trip while you have an overlapping active trip as creator',
+            };
+          }
+        }
       }
 
       final pendingCount = await _getUserPendingRequestsCount(userId);
@@ -155,7 +283,7 @@ class TripValidationService {
         return {
           'valid': false,
           'error':
-              'You have reached the maximum pending requests ($maxPendingRequests)',
+              'You have reached the maximum pending requests ($maxPendingRequests). Wait for responses.',
         };
       }
 
@@ -164,18 +292,140 @@ class TripValidationService {
         return {'valid': false, 'error': rateLimitCheck['error']};
       }
 
+      final totalActiveParticipation = await _getTotalActiveParticipation(
+        userId,
+      );
+      if (totalActiveParticipation >= maxSimultaneousActiveTrips) {
+        return {
+          'valid': false,
+          'error':
+              'You can only participate in $maxSimultaneousActiveTrips active trips at once',
+        };
+      }
+
       return {'valid': true};
     } catch (e) {
       return {'valid': false, 'error': 'Validation error: ${e.toString()}'};
     }
   }
 
+  Future<List<Map<String, dynamic>>> _getActiveCreatorTrips(
+    String userId,
+  ) async {
+    try {
+      final now = DateTime.now();
+      final snapshot = await _firestore
+          .collection('trips')
+          .where('createdBy', isEqualTo: userId)
+          .where('status', whereIn: ['active', 'full'])
+          .get();
+
+      List<Map<String, dynamic>> activeTrips = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final departureTime = (data['departureTime'] as Timestamp).toDate();
+
+        if (departureTime.isAfter(now) ||
+            (data['endTime'] != null &&
+                (data['endTime'] as Timestamp).toDate().isAfter(now))) {
+          activeTrips.add({
+            'id': doc.id,
+            'departureTime': departureTime,
+            'endTime': data['endTime'] != null
+                ? (data['endTime'] as Timestamp).toDate()
+                : departureTime.add(const Duration(hours: 2)),
+            ...data,
+          });
+        }
+      }
+
+      return activeTrips;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<int> _getTotalActiveParticipation(String userId) async {
+    try {
+      final now = DateTime.now();
+      int count = 0;
+
+      final creatorTrips = await _firestore
+          .collection('trips')
+          .where('createdBy', isEqualTo: userId)
+          .where('status', whereIn: ['active', 'full'])
+          .get();
+
+      for (var doc in creatorTrips.docs) {
+        final data = doc.data();
+        final endTime = data['endTime'] != null
+            ? (data['endTime'] as Timestamp).toDate()
+            : (data['departureTime'] as Timestamp).toDate().add(
+                const Duration(hours: 2),
+              );
+
+        if (endTime.isAfter(now)) {
+          count++;
+        }
+      }
+
+      final memberTrips = await _firestore
+          .collection('trips')
+          .where('joinedUsers', arrayContains: userId)
+          .where('status', whereIn: ['active', 'full'])
+          .get();
+
+      for (var doc in memberTrips.docs) {
+        final data = doc.data();
+        final endTime = data['endTime'] != null
+            ? (data['endTime'] as Timestamp).toDate()
+            : (data['departureTime'] as Timestamp).toDate().add(
+                const Duration(hours: 2),
+              );
+
+        if (endTime.isAfter(now)) {
+          count++;
+        }
+      }
+
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<bool> _isBlockedByUser(String userId, String otherUserId) async {
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(otherUserId)
+          .collection('blockedUsers')
+          .doc(userId)
+          .get();
+
+      return doc.exists;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<bool> _hasOverlappingTrip(
     String userId,
     DateTime startTime,
-    DateTime endTime,
-  ) async {
+    DateTime endTime, {
+    bool includeBuffer = false,
+  }) async {
     try {
+      final now = DateTime.now();
+
+      final checkStart = includeBuffer
+          ? startTime.subtract(Duration(minutes: tripBufferMinutes))
+          : startTime;
+      final checkEnd = includeBuffer
+          ? endTime.add(Duration(minutes: tripBufferMinutes))
+          : endTime;
+
       final activeTrips = await _firestore
           .collection('trips')
           .where('createdBy', isEqualTo: userId)
@@ -189,7 +439,9 @@ class TripValidationService {
             ? (data['endTime'] as Timestamp).toDate()
             : tripStart.add(const Duration(hours: 2));
 
-        if (_timeRangesOverlap(startTime, endTime, tripStart, tripEnd)) {
+        if (tripEnd.isBefore(now)) continue;
+
+        if (_timeRangesOverlap(checkStart, checkEnd, tripStart, tripEnd)) {
           return true;
         }
       }
@@ -207,7 +459,9 @@ class TripValidationService {
             ? (data['endTime'] as Timestamp).toDate()
             : tripStart.add(const Duration(hours: 2));
 
-        if (_timeRangesOverlap(startTime, endTime, tripStart, tripEnd)) {
+        if (tripEnd.isBefore(now)) continue;
+
+        if (_timeRangesOverlap(checkStart, checkEnd, tripStart, tripEnd)) {
           return true;
         }
       }
@@ -243,8 +497,8 @@ class TripValidationService {
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        if (data['destination']?.toString().toLowerCase() ==
-            destination.toLowerCase()) {
+        if (data['destination']?.toString().toLowerCase().trim() ==
+            destination.toLowerCase().trim()) {
           return true;
         }
       }
@@ -273,16 +527,7 @@ class TripValidationService {
         return {
           'allowed': false,
           'error':
-              'Daily trip creation limit reached ($maxTripsPerDay per day)',
-        };
-      }
-
-      final recentCancellations = await _getRecentCancellationsCount(userId);
-      if (recentCancellations >= cooldownAfterCancellations) {
-        return {
-          'allowed': false,
-          'error':
-              'Too many recent cancellations. Please wait before creating a new trip.',
+              'Daily trip creation limit reached ($maxTripsPerDay per day). Try again tomorrow.',
         };
       }
 
@@ -309,7 +554,8 @@ class TripValidationService {
       if (requestsToday.docs.length >= maxJoinAttemptsPerDay) {
         return {
           'allowed': false,
-          'error': 'Daily join limit reached ($maxJoinAttemptsPerDay per day)',
+          'error':
+              'Daily join request limit reached ($maxJoinAttemptsPerDay per day). Try again tomorrow.',
         };
       }
 
@@ -357,8 +603,16 @@ class TripValidationService {
     DateTime start1,
     DateTime end1,
     DateTime start2,
-    DateTime end2,
-  ) {
+    DateTime end2, {
+    bool includeBuffer = false,
+  }) {
+    if (includeBuffer) {
+      start1 = start1.subtract(Duration(minutes: tripBufferMinutes));
+      end1 = end1.add(Duration(minutes: tripBufferMinutes));
+      start2 = start2.subtract(Duration(minutes: tripBufferMinutes));
+      end2 = end2.add(Duration(minutes: tripBufferMinutes));
+    }
+
     return start1.isBefore(end2) && end1.isAfter(start2);
   }
 

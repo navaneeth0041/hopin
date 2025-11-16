@@ -5,6 +5,7 @@ import 'package:hopin/data/providers/trip_provider.dart';
 import 'package:hopin/data/providers/blocked_users_provider.dart';
 import 'package:hopin/data/services/trip_request_service.dart';
 import 'package:hopin/data/services/trip_validation_service.dart';
+import 'package:hopin/presentation/features/home/utils/trip_dialog_helpers.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/ride_card.dart';
@@ -25,6 +26,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
   RideFilterOptions advancedFilters = RideFilterOptions();
   String? currentUserId;
   final TripRequestService _requestService = TripRequestService();
+  final TripValidationService _validationService = TripValidationService();
   Set<String> _requestedTripIds = {};
 
   @override
@@ -163,21 +165,35 @@ class _JoinTripPageState extends State<JoinTripPage> {
   }
 
   void _handleJoinRide(Trip trip) async {
-    final requestService = TripRequestService();
-    final validationService = TripValidationService();
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      TripDialogHelpers.showErrorSnackBar(
+        context,
+        'You must be logged in to join trips',
+      );
+      return;
+    }
 
-    final validation = await validationService.canJoinTrip(
-      userId: FirebaseAuth.instance.currentUser!.uid,
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryYellow),
+      ),
+    );
+
+    final validation = await _validationService.canJoinTrip(
+      userId: userId,
       tripId: trip.id,
     );
 
+    if (mounted) Navigator.pop(context);
+
     if (!validation['valid']) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(validation['error']),
-            backgroundColor: AppColors.accentRed,
-          ),
+        TripDialogHelpers.showErrorSnackBar(
+          context,
+          validation['error'] ?? 'Cannot join this trip',
         );
       }
       return;
@@ -262,24 +278,45 @@ class _JoinTripPageState extends State<JoinTripPage> {
     );
 
     if (result == true && mounted) {
-      final requestResult = await requestService.createTripRequest(
+      final requestResult = await _requestService.createTripRequest(
         tripId: trip.id,
         message: noteText.isEmpty ? null : noteText,
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              requestResult['success']
-                  ? 'Request sent successfully!'
-                  : requestResult['error'] ?? 'Failed to send request',
+        if (requestResult['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Request sent successfully!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.accentGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
             ),
-            backgroundColor: requestResult['success']
-                ? AppColors.accentGreen
-                : AppColors.accentRed,
-          ),
-        );
+          );
+        } else {
+          TripDialogHelpers.showErrorSnackBar(
+            context,
+            requestResult['error'] ?? 'Failed to send request',
+          );
+        }
       }
     }
   }

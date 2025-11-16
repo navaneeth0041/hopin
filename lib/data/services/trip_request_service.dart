@@ -109,6 +109,11 @@ class TripRequestService {
         };
       }
 
+      final tripStartTime = (tripData['departureTime'] as Timestamp).toDate();
+      final tripEndTime = tripData['endTime'] != null
+          ? (tripData['endTime'] as Timestamp).toDate()
+          : tripStartTime.add(const Duration(hours: 2));
+
       return await _firestore
           .runTransaction((transaction) async {
             final freshTripDoc = await transaction.get(
@@ -154,9 +159,19 @@ class TripRequestService {
             return {
               'success': true,
               'message': 'Request accepted successfully',
+              'requesterId': request.requesterId,
+              'tripStartTime': tripStartTime,
+              'tripEndTime': tripEndTime,
             };
           })
           .then((result) async {
+            await _cancelConflictingRequests(
+              request.requesterId,
+              result['tripStartTime'] as DateTime,
+              result['tripEndTime'] as DateTime,
+              excludeRequestId: requestId,
+            );
+
             await _createNotification(
               userId: request.requesterId,
               tripId: request.tripId,
@@ -189,6 +204,104 @@ class TripRequestService {
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
+  }
+
+  Future<void> _cancelConflictingRequests(
+    String userId,
+    DateTime acceptedTripStart,
+    DateTime acceptedTripEnd, {
+    String? excludeRequestId,
+  }) async {
+    try {
+      final pendingRequests = await _firestore
+          .collection('tripRequests')
+          .where('requesterId', isEqualTo: userId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      for (final requestDoc in pendingRequests.docs) {
+        if (excludeRequestId != null && requestDoc.id == excludeRequestId) {
+          continue;
+        }
+
+        final requestData = requestDoc.data();
+        final tripId = requestData['tripId'];
+
+        final tripDoc = await _firestore.collection('trips').doc(tripId).get();
+
+        if (!tripDoc.exists) {
+          await _cancelRequestWithNotification(
+            requestDoc.id,
+            userId,
+            tripId,
+            'Trip no longer exists',
+          );
+          continue;
+        }
+
+        final tripData = tripDoc.data()!;
+        final tripStartTime = (tripData['departureTime'] as Timestamp).toDate();
+        final tripEndTime = tripData['endTime'] != null
+            ? (tripData['endTime'] as Timestamp).toDate()
+            : tripStartTime.add(const Duration(hours: 2));
+
+        final bufferStart = acceptedTripStart.subtract(
+          const Duration(minutes: 30),
+        );
+        final bufferEnd = acceptedTripEnd.add(const Duration(minutes: 30));
+
+        if (_timeRangesOverlap(
+          bufferStart,
+          bufferEnd,
+          tripStartTime,
+          tripEndTime,
+        )) {
+          await _cancelRequestWithNotification(
+            requestDoc.id,
+            userId,
+            tripId,
+            'Automatically cancelled due to time conflict with another accepted trip',
+          );
+        }
+      }
+    } catch (e) {
+      print('Error cancelling conflicting requests: $e');
+    }
+  }
+
+  Future<void> _cancelRequestWithNotification(
+    String requestId,
+    String userId,
+    String tripId,
+    String reason,
+  ) async {
+    try {
+      await _firestore.collection('tripRequests').doc(requestId).update({
+        'status': 'cancelled',
+        'respondedAt': FieldValue.serverTimestamp(),
+        'responseMessage': reason,
+      });
+
+      await _createNotification(
+        userId: userId,
+        tripId: tripId,
+        type: NotificationType.requestRejected,
+        title: 'Request Cancelled',
+        message: reason,
+        data: {'requestId': requestId, 'tripId': tripId},
+      );
+    } catch (e) {
+      print('Error in _cancelRequestWithNotification: $e');
+    }
+  }
+
+  bool _timeRangesOverlap(
+    DateTime start1,
+    DateTime end1,
+    DateTime start2,
+    DateTime end2,
+  ) {
+    return start1.isBefore(end2) && end1.isAfter(start2);
   }
 
   Future<Map<String, dynamic>> rejectTripRequest(
