@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/trip.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
+import 'package:hopin/data/providers/blocked_users_provider.dart';
 import 'package:hopin/data/services/trip_request_service.dart';
 import 'package:hopin/data/services/trip_validation_service.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +34,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
     _loadPendingRequests();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTrips();
+      _loadBlockedUsers();
     });
   }
 
@@ -50,6 +52,14 @@ class _JoinTripPageState extends State<JoinTripPage> {
   void _loadTrips() {
     final tripProvider = Provider.of<TripProvider>(context, listen: false);
     tripProvider.loadActiveTrips();
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    final blockedProvider = Provider.of<BlockedUsersProvider>(
+      context,
+      listen: false,
+    );
+    await blockedProvider.loadBlockedUsers();
   }
 
   List<Trip> _getFilteredTrips(List<Trip> allTrips) {
@@ -276,9 +286,17 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TripProvider>(
-      builder: (context, tripProvider, child) {
-        filteredRides = _getFilteredTrips(tripProvider.activeTrips);
+    return Consumer2<TripProvider, BlockedUsersProvider>(
+      builder: (context, tripProvider, blockedProvider, child) {
+        final blockedUserIds = blockedProvider.blockedUsers
+            .map((user) => user.uid)
+            .toSet();
+
+        final tripsExcludingBlocked = tripProvider.activeTrips
+            .where((trip) => !blockedUserIds.contains(trip.createdBy))
+            .toList();
+
+        filteredRides = _getFilteredTrips(tripsExcludingBlocked);
 
         return Column(
           children: [

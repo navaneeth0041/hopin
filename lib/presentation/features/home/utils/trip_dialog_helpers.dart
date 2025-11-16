@@ -1,10 +1,7 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 
 class TripDialogHelpers {
-  // Loading Dialog
   static void showLoadingDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -42,7 +39,6 @@ class TripDialogHelpers {
     );
   }
 
-  // Success Dialog
   static void showSuccessDialog(
     BuildContext context, {
     required String title,
@@ -64,7 +60,6 @@ class TripDialogHelpers {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Animated Icon
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -101,7 +96,6 @@ class TripDialogHelpers {
                 ),
               ),
 
-              // Message
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Column(
@@ -151,25 +145,53 @@ class TripDialogHelpers {
     );
   }
 
-  // Error SnackBar
   static void showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(message, style: const TextStyle(fontSize: 14)),
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.accentRed,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        backgroundColor: AppColors.accentRed,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
       ),
     );
+
+    overlay.insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 4), () {
+      overlayEntry.remove();
+    });
   }
 }

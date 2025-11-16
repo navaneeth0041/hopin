@@ -8,7 +8,7 @@ class TripValidationService {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
   static const int maxTripsPerDay = 3;
-  static const int maxJoinAttemptsPerDay = 5;
+  static const int maxJoinAttemptsPerDay = 10;
   static const int cooldownAfterCancellations = 2;
   static const int maxPendingRequests = 5;
 
