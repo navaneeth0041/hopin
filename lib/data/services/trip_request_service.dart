@@ -357,6 +357,8 @@ class TripRequestService {
           .collection('notifications')
           .doc(notificationId)
           .set(notification.toMap());
+
+      print('Notification created for user: $userId');
     } catch (e) {
       print('Error creating notification: $e');
     }

@@ -4,6 +4,7 @@ import 'package:hopin/data/providers/blocked_users_provider.dart';
 import 'package:hopin/data/providers/privacy_provider.dart';
 import 'package:hopin/data/providers/report_provider.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
+import 'package:hopin/data/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,6 +15,8 @@ import 'presentation/routes/app_routes.dart';
 import 'presentation/features/onboarding/onboarding_screen.dart';
 import 'presentation/features/auth/login_screen.dart';
 import 'presentation/features/home/home_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +43,9 @@ void main() async {
 Future<void> _requestInitialPermissions() async {
   try {
     await Permission.location.request();
-
     await Permission.sms.request();
     await Permission.phone.request();
+    await Permission.notification.request();
   } catch (e) {
     return;
   }
@@ -65,6 +68,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'HopIn - Ride Sharing',
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFFFFC107),
@@ -111,6 +115,10 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
     Widget targetScreen;
 
     if (authProvider.isAuthenticated && authProvider.user != null) {
+      await NotificationService.instance.initialize(
+        userId: authProvider.user!.uid,
+      );
+
       if (authProvider.isEmailVerified) {
         final profileProvider = Provider.of<UserProfileProvider>(
           context,
