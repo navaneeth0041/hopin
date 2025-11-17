@@ -69,9 +69,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
     List<Trip> userFilteredTrips = allTrips.where((trip) {
       if (trip.createdBy == currentUserId) return false;
-
       if (trip.joinedUsers.contains(currentUserId)) return false;
-
       return true;
     }).toList();
 
@@ -323,25 +321,7 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.darkBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Find Rides',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Consumer2<TripProvider, BlockedUsersProvider>(
+    return Consumer2<TripProvider, BlockedUsersProvider>(
       builder: (context, tripProvider, blockedProvider, child) {
         final blockedUserIds = blockedProvider.blockedUsers
             .map((user) => user.uid)
@@ -353,132 +333,134 @@ class _JoinTripPageState extends State<JoinTripPage> {
 
         filteredRides = _getFilteredTrips(tripsExcludingBlocked);
 
-        return Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                MediaQuery.of(context).padding.top + 16,
-                20,
-                12,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Available Rides',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryYellow.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${filteredRides.length} rides',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryYellow,
+        return SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(width: 44),
+                    const Text(
+                      'Available Rides',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: FilterChips(
-                selectedFilter: selectedTimeFilter,
-                onFilterSelected: _onTimeFilterSelected,
-                onMoreFilters: _showAdvancedFilters,
-              ),
-            ),
-
-            if (advancedFilters.hasActiveFilters)
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryYellow.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.primaryYellow.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.filter_alt,
-                      size: 16,
-                      color: AppColors.primaryYellow,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryYellow.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: Text(
-                        _getActiveFiltersText(),
+                        '${filteredRides.length} rides',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryYellow,
                         ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          advancedFilters = RideFilterOptions();
-                        });
-                      },
-                      child: const Icon(
-                        Icons.close,
-                        size: 18,
-                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
 
-            Expanded(
-              child: tripProvider.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: FilterChips(
+                  selectedFilter: selectedTimeFilter,
+                  onFilterSelected: _onTimeFilterSelected,
+                  onMoreFilters: _showAdvancedFilters,
+                ),
+              ),
+
+              if (advancedFilters.hasActiveFilters)
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryYellow.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primaryYellow.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.filter_alt,
+                        size: 16,
                         color: AppColors.primaryYellow,
                       ),
-                    )
-                  : filteredRides.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                      itemCount: filteredRides.length,
-                      itemBuilder: (context, index) {
-                        final trip = filteredRides[index];
-                        return RideCard(
-                          trip: trip,
-                          onJoinRide: () => _handleJoinRide(trip),
-                          onViewDetails: () => _showRideDetails(trip),
-                          hasRequestedJoin: _requestedTripIds.contains(trip.id),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _getActiveFiltersText(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            advancedFilters = RideFilterOptions();
+                          });
+                        },
+                        child: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              Expanded(
+                child: tripProvider.isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryYellow,
+                        ),
+                      )
+                    : filteredRides.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                        itemCount: filteredRides.length,
+                        itemBuilder: (context, index) {
+                          final trip = filteredRides[index];
+                          return RideCard(
+                            trip: trip,
+                            onJoinRide: () => _handleJoinRide(trip),
+                            onViewDetails: () => _showRideDetails(trip),
+                            hasRequestedJoin: _requestedTripIds.contains(
+                              trip.id,
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         );
       },
-      ),
     );
   }
 
