@@ -140,13 +140,13 @@ class TripValidationService {
       }
 
       final recentCancellations = await _getRecentCancellationsCount(userId);
-      if (recentCancellations >= cooldownAfterCancellations) {
-        return {
-          'valid': false,
-          'error':
-              'Too many recent cancellations. Please wait 24 hours before creating new trips.',
-        };
-      } 
+      // if (recentCancellations >= cooldownAfterCancellations) {
+      //   return {
+      //     'valid': false,
+      //     'error':
+      //         'Too many recent cancellations. Please wait 24 hours before creating new trips.',
+      //   };
+      // } //uncomment
 
       final totalActiveParticipation = await _getTotalActiveParticipation(
         userId,
@@ -523,13 +523,13 @@ class TripValidationService {
           )
           .get();
 
-      if (tripsToday.docs.length >= maxTripsPerDay) {
-        return {
-          'allowed': false,
-          'error':
-              'Daily trip creation limit reached ($maxTripsPerDay per day). Try again tomorrow.',
-        };
-      } 
+      // if (tripsToday.docs.length >= maxTripsPerDay) {
+      //   return {
+      //     'allowed': false,
+      //     'error':
+      //         'Daily trip creation limit reached ($maxTripsPerDay per day). Try again tomorrow.',
+      //   };
+      // } // uncomment
 
       return {'allowed': true};
     } catch (e) {

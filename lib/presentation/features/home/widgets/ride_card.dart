@@ -49,19 +49,8 @@ class RideCard extends StatelessWidget {
                     if (snapshot.hasData) {
                       return snapshot.data!;
                     }
-                    return Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryYellow,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.black,
-                        size: 28,
-                      ),
-                    );
+                    // Show enhanced fallback with initials while loading
+                    return _buildDefaultProfileImage();
                   },
                 ),
                 const SizedBox(width: 12),
@@ -432,14 +421,27 @@ class RideCard extends StatelessWidget {
   }
 
   Widget _buildDefaultProfileImage() {
+    final initials = trip.creatorName.isNotEmpty 
+      ? trip.creatorName.split(' ').map((n) => n.isNotEmpty ? n[0].toUpperCase() : '').take(2).join('')
+      : 'U';
+    
     return Container(
       width: 50,
       height: 50,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.primaryYellow,
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.person, color: Colors.black, size: 28),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+      ),
     );
   }
 }

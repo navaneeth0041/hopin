@@ -35,7 +35,7 @@ class ProfileHeader extends StatelessWidget {
           );
         }
       } catch (e) {
-        print('Error displaying base64 image: $e');
+        // Silently handle base64 image display errors
       }
     }
 
@@ -56,7 +56,7 @@ class ProfileHeader extends StatelessWidget {
           );
         }
       } catch (e) {
-        print('Error displaying local image: $e');
+        // Silently handle local image display errors
       }
     }
 

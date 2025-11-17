@@ -2,6 +2,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:latlong2/latlong.dart';
@@ -75,7 +76,6 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
       }
     } catch (e) {
       // Handle location update errors silently
-      debugPrint('Location update error: $e');
     }
   }
 
@@ -85,9 +85,6 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
       final userLocation = LatLng(pos.latitude, pos.longitude);
 
       setState(() => _currentLocation = userLocation);
-      debugPrint(
-        "Current Location: ${_currentLocation!.latitude}, ${_currentLocation!.longitude}",
-      );
 
       await _fetchTrips(pos.latitude, pos.longitude);
 
@@ -99,7 +96,7 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
         });
       });
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      // Handle location errors silently
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -257,7 +254,11 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
     });
 
     if (widget.onTripsCountChanged != null) {
-      widget.onTripsCountChanged!(_availableTrips.length);
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onTripsCountChanged!(_availableTrips.length);
+        }
+      });
     }
   }
 

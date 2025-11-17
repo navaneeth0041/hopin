@@ -30,4 +30,36 @@ class LocationService {
       desiredAccuracy: LocationAccuracy.high,
     );
   }
+
+  /// Calculate distance between two points in kilometers
+  static double calculateDistance(
+    double startLatitude,
+    double startLongitude,
+    double endLatitude,
+    double endLongitude,
+  ) {
+    return Geolocator.distanceBetween(
+      startLatitude,
+      startLongitude,
+      endLatitude,
+      endLongitude,
+    ) / 1000; // Convert meters to kilometers
+  }
+
+  /// Check if a location is within a certain radius (in kilometers)
+  static bool isWithinRadius(
+    double userLatitude,
+    double userLongitude,
+    double tripLatitude,
+    double tripLongitude,
+    double radiusKm,
+  ) {
+    final distance = calculateDistance(
+      userLatitude,
+      userLongitude,
+      tripLatitude,
+      tripLongitude,
+    );
+    return distance <= radiusKm;
+  }
 }

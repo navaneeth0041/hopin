@@ -134,6 +134,9 @@ import 'package:hopin/data/models/trip.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 // import 'ride_detail_bottom_sheet.dart';
 
 class ActiveRideCard extends StatelessWidget {
@@ -151,6 +154,79 @@ class ActiveRideCard extends StatelessWidget {
     return '${dateTime.day} ${months[dateTime.month - 1]}, ${dateTime.year}';
   }
 
+  Future<Widget> _buildProfileImage(String userId, String name, bool isOwnTrip) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final details = userData?['details'] as Map<String, dynamic>?;
+        final profileImageBase64 = details?['profileImageBase64'] as String?;
+
+        if (profileImageBase64 != null && profileImageBase64.isNotEmpty) {
+          try {
+            final Uint8List bytes = base64Decode(profileImageBase64);
+            return Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: MemoryImage(bytes),
+                  fit: BoxFit.cover,
+                ),
+                border: Border.all(
+                  color: isOwnTrip ? Colors.blue.shade300 : AppColors.primaryYellow,
+                  width: 2,
+                ),
+              ),
+            );
+          } catch (e) {
+            return _buildInitials(name, isOwnTrip);
+          }
+        }
+      }
+    } catch (e) {
+      return _buildInitials(name, isOwnTrip);
+    }
+
+    return _buildInitials(name, isOwnTrip);
+  }
+
+  Widget _buildInitials(String name, bool isOwnTrip) {
+    final initials = name.isNotEmpty 
+      ? name.split(' ').map((n) => n.isNotEmpty ? n[0].toUpperCase() : '').take(2).join('')
+      : 'U';
+    
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isOwnTrip 
+            ? [Colors.blue.shade300, Colors.blue.shade500]
+            : [AppColors.primaryYellow.withOpacity(0.8), AppColors.primaryYellow],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isOwnTrip ? Colors.white : Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -161,13 +237,13 @@ class ActiveRideCard extends StatelessWidget {
         Trip? activeTrip;
         
         final createdTrips = tripProvider.myCreatedTrips.where((trip) => 
-          trip.status == TripStatus.active || trip.status == TripStatus.full).toList();
+          trip.status == TripStatus.active).toList();
         
         if (createdTrips.isNotEmpty) {
           activeTrip = createdTrips.first;
         } else {
           final joinedTrips = tripProvider.myJoinedTrips.where((trip) => 
-            trip.status == TripStatus.active || trip.status == TripStatus.full).toList();
+            trip.status == TripStatus.active).toList();
           
           if (joinedTrips.isNotEmpty) {
             activeTrip = joinedTrips.first;
@@ -178,7 +254,8 @@ class ActiveRideCard extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final isOwnTrip = activeTrip.createdBy == currentUserId;
+        final Trip trip = activeTrip;
+        final isOwnTrip = trip.createdBy == currentUserId;
 
         return Container(
           padding: const EdgeInsets.all(16),
@@ -194,13 +271,37 @@ class ActiveRideCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: isOwnTrip ? Colors.blue : AppColors.primaryYellow,
                       shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isOwnTrip 
+                          ? [Colors.blue.shade400, Colors.blue.shade600]
+                          : [AppColors.primaryYellow, AppColors.primaryYellow.withOpacity(0.8)],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      isOwnTrip ? Icons.account_circle : Icons.person,
-                      color: Colors.black,
-                      size: 26,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: FutureBuilder<Widget>(
+                        future: _buildProfileImage(trip.createdBy, trip.creatorName, isOwnTrip),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return snapshot.data!;
+                          }
+                          return _buildInitials(trip.creatorName, isOwnTrip);
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -209,7 +310,7 @@ class ActiveRideCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isOwnTrip ? 'You (${activeTrip.creatorName})' : activeTrip.creatorName,
+                          isOwnTrip ? 'You (${trip.creatorName})' : trip.creatorName,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -228,51 +329,6 @@ class ActiveRideCard extends StatelessWidget {
                     ),
                   ),
 
-
-              // GestureDetector(
-              //   onTap: () {
-              //     showModalBottomSheet(
-              //       context: context,
-              //       isScrollControlled: true,
-              //       backgroundColor: Colors.transparent,
-              //       builder: (_) => RideDetailBottomSheet(ride: ride),
-              //     );
-              //   },
-              //   child: Container(
-              //     padding: const EdgeInsets.symmetric(
-              //       horizontal: 14,
-              //       vertical: 8,
-              //     ),
-              //     decoration: BoxDecoration(
-
-              //       color: Colors.white.withOpacity(0.1),
-              //       borderRadius: BorderRadius.circular(20),
-
-              //       border: Border.all(
-              //         color: Colors.white.withOpacity(0.2),
-              //         width: 1,
-              //       ),
-              //     ),
-              //     child: const Row(
-              //       children: [
-              //         Icon(
-              //           Icons.info_outline,
-              //           color: AppColors.textSecondary,
-              //           size: 16,
-              //         ),
-              //         SizedBox(width: 6),
-              //         Text(
-              //           'Details',
-              //           style: TextStyle(
-              //             fontSize: 13,
-              //             color: AppColors.textPrimary,
-              //             fontWeight: FontWeight.w500,
-              //           ),
-              //         ),
-              //       ],
-              //     ),
-              //   ),
-              // ),
             ],
           ),
 
@@ -296,7 +352,7 @@ class ActiveRideCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              activeTrip.currentLocation,
+                              trip.currentLocation,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -319,7 +375,7 @@ class ActiveRideCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              activeTrip.destination,
+                              trip.destination,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -347,7 +403,7 @@ class ActiveRideCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _formatDate(activeTrip.departureTime),
+                            _formatDate(trip.departureTime),
                             style: const TextStyle(color: AppColors.textPrimary),
                           ),
                         ],
@@ -361,7 +417,7 @@ class ActiveRideCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _formatTime(activeTrip.departureTime),
+                            _formatTime(trip.departureTime),
                             style: const TextStyle(color: AppColors.textPrimary),
                           ),
                         ],
@@ -375,7 +431,7 @@ class ActiveRideCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${activeTrip.availableSeats} seats',
+                            '${trip.availableSeats} seats',
                             style: const TextStyle(color: AppColors.textPrimary),
                           ),
                         ],
@@ -385,23 +441,17 @@ class ActiveRideCard extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // Status badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: activeTrip.status == TripStatus.active
-                          ? AppColors.accentGreen.withOpacity(0.15)
-                          : Colors.orange.withOpacity(0.15),
+                      color: AppColors.accentGreen.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      activeTrip.status == TripStatus.active ? 'Active' : 
-                      activeTrip.status == TripStatus.full ? 'Full' : 'Completed',
+                    child: const Text(
+                      'Active',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: activeTrip.status == TripStatus.active
-                            ? AppColors.accentGreen
-                            : Colors.orange,
+                        color: AppColors.accentGreen,
                       ),
                     ),
                   ),
