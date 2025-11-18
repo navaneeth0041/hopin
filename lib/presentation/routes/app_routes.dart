@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
 import 'package:hopin/presentation/features/notifications/notifications_screen.dart';
+import 'package:hopin/presentation/features/payments/screens/unpaid_trips_screen.dart';
 import 'package:hopin/presentation/features/profile/edit_profile_screen.dart';
 import 'package:hopin/presentation/features/report_support/my_reports_screen.dart';
 import 'package:hopin/presentation/features/settings/blocked_users_screen.dart';
@@ -49,6 +50,7 @@ class AppRoutes {
       RouteNames.notifications: (context) => const NotificationsScreen(),
       RouteNames.createTrip: (context) => const CreateTripPage(),
       RouteNames.joinTrip: (context) => const JoinTripPage(),
+      RouteNames.unpaidTrips: (context) => const UnpaidTripsScreen(),
     };
   }
 
@@ -82,15 +84,23 @@ class AppRoutes {
       case RouteNames.about:
         return MaterialPageRoute(builder: (context) => const AboutScreen());
       case RouteNames.privacyPolicy:
-        return MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen());
+        return MaterialPageRoute(
+          builder: (context) => const PrivacyPolicyScreen(),
+        );
       case RouteNames.termsOfService:
-        return MaterialPageRoute(builder: (context) => const TermsOfServiceScreen());
+        return MaterialPageRoute(
+          builder: (context) => const TermsOfServiceScreen(),
+        );
       case RouteNames.help:
         return MaterialPageRoute(builder: (context) => const HelpFaqScreen());
       case RouteNames.changePassword:
-        return MaterialPageRoute(builder: (context) => const ChangePasswordScreen());
+        return MaterialPageRoute(
+          builder: (context) => const ChangePasswordScreen(),
+        );
       case RouteNames.editProfile:
-        return MaterialPageRoute(builder: (context) => const EditProfileScreen());
+        return MaterialPageRoute(
+          builder: (context) => const EditProfileScreen(),
+        );
       case RouteNames.emergencyContact:
         return MaterialPageRoute(
           builder: (context) => const EmergencyContactScreen(),
@@ -104,31 +114,26 @@ class AppRoutes {
           builder: (context) => const ReportSupportScreen(),
         );
       case RouteNames.myReport:
-        return MaterialPageRoute(
-          builder: (context) => const MyReportsScreen(),
-        );
+        return MaterialPageRoute(builder: (context) => const MyReportsScreen());
       case RouteNames.blockedUsers:
         return MaterialPageRoute(
           builder: (context) => const BlockedUsersScreen(),
         );
-     case RouteNames.privacy:
+      case RouteNames.privacy:
         return MaterialPageRoute(
           builder: (context) => const PrivacySettingsScreen(),
         );
-     case RouteNames.notifications:
-        return MaterialPageRoute(
-          builder: (context) =>  NotificationsScreen(),
-        );
+      case RouteNames.notifications:
+        return MaterialPageRoute(builder: (context) => NotificationsScreen());
 
       case RouteNames.createTrip:
-        return MaterialPageRoute(
-          builder: (context) => const CreateTripPage(),
-        );
+        return MaterialPageRoute(builder: (context) => const CreateTripPage());
 
       case RouteNames.joinTrip:
-        return MaterialPageRoute(
-          builder: (context) => const JoinTripPage(),
-        );
+        return MaterialPageRoute(builder: (context) => const JoinTripPage());
+
+      case RouteNames.unpaidTrips:
+        return MaterialPageRoute(builder: (context) => const UnpaidTripsScreen());
 
       case RouteNames.tripHistory:
       case RouteNames.notificationSettings:

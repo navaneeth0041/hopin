@@ -259,8 +259,14 @@ class TripValidationService {
       final activeCreatorTrips = await _getActiveCreatorTrips(userId);
       if (activeCreatorTrips.isNotEmpty) {
         for (final creatorTrip in activeCreatorTrips) {
-          final creatorStart = creatorTrip['departureTime'];
-          final creatorEnd = creatorTrip['endTime'];
+          // FIX: Convert Timestamp to DateTime
+          final creatorStart = creatorTrip['departureTime'] is Timestamp
+              ? (creatorTrip['departureTime'] as Timestamp).toDate()
+              : creatorTrip['departureTime'] as DateTime;
+
+          final creatorEnd = creatorTrip['endTime'] is Timestamp
+              ? (creatorTrip['endTime'] as Timestamp).toDate()
+              : creatorTrip['endTime'] as DateTime;
 
           if (_timeRangesOverlap(
             startTime,
