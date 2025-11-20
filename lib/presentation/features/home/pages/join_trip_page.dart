@@ -6,6 +6,7 @@ import 'package:hopin/data/providers/blocked_users_provider.dart';
 import 'package:hopin/data/services/trip_request_service.dart';
 import 'package:hopin/data/services/trip_validation_service.dart';
 import 'package:hopin/presentation/features/home/utils/trip_dialog_helpers.dart';
+import 'package:hopin/presentation/features/payments/services/payment_guard_service.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/ride_card.dart';
@@ -172,6 +173,15 @@ class _JoinTripPageState extends State<JoinTripPage> {
       return;
     }
 
+    final canProceed = await PaymentGuardService.checkPaymentStatusBeforeAction(
+      context,
+      actionType: 'join',
+    );
+
+    if (!canProceed) {
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -196,7 +206,6 @@ class _JoinTripPageState extends State<JoinTripPage> {
       }
       return;
     }
-
     String noteText = '';
 
     final result = await showDialog<bool>(

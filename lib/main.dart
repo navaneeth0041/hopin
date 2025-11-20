@@ -105,6 +105,10 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
     if (!mounted) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final paymentProvider = Provider.of<TripPaymentProvider>(
+      context,
+      listen: false,
+    );
 
     int attempts = 0;
     while (!authProvider.isInitialized && attempts < 50) {
@@ -120,6 +124,8 @@ class _AuthStateHandlerState extends State<AuthStateHandler> {
       await NotificationService.instance.initialize(
         userId: authProvider.user!.uid,
       );
+
+      await paymentProvider.checkPaymentStatus();
 
       if (authProvider.isEmailVerified) {
         final profileProvider = Provider.of<UserProfileProvider>(

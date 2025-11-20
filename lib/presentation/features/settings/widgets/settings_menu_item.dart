@@ -7,12 +7,17 @@ class SettingsMenuItem extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
 
+  final Color? iconColor;
+  final Widget? trailing;
+
   const SettingsMenuItem({
     super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconColor,
+    this.trailing,
   });
 
   @override
@@ -34,16 +39,22 @@ class SettingsMenuItem extends StatelessWidget {
                 color: const Color(0xFF2C2C2E),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppColors.primaryYellow, size: 24),
+              child: Icon(
+                icon,
+                color: iconColor ?? AppColors.primaryYellow,
+                size: 24,
+              ),
             ),
+
             const SizedBox(width: 16),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -52,7 +63,7 @@ class SettingsMenuItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
@@ -60,12 +71,13 @@ class SettingsMenuItem extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.textSecondary,
 
-              size: 16,
-            ),
+            trailing ??
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.textSecondary,
+                  size: 16,
+                ),
           ],
         ),
       ),

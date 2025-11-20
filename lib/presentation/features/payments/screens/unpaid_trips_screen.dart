@@ -21,10 +21,7 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
   }
 
   Future<void> _loadUnpaidTrips() async {
-    final provider = Provider.of<TripPaymentProvider>(
-      context,
-      listen: false,
-    );
+    final provider = Provider.of<TripPaymentProvider>(context, listen: false);
     await provider.checkPaymentStatus();
     if (mounted) {
       setState(() => _isLoading = false);
@@ -53,9 +50,7 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primaryYellow,
-              ),
+              child: CircularProgressIndicator(color: AppColors.primaryYellow),
             )
           : Consumer<TripPaymentProvider>(
               builder: (context, provider, child) {
@@ -253,20 +248,14 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.divider.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.divider.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: AppColors.accentBlue,
-                size: 20,
-              ),
+              Icon(Icons.info_outline, color: AppColors.accentBlue, size: 20),
               const SizedBox(width: 12),
               const Text(
                 'What to do?',
@@ -302,11 +291,7 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.warning_amber,
-                  color: AppColors.accentRed,
-                  size: 18,
-                ),
+                Icon(Icons.warning_amber, color: AppColors.accentRed, size: 18),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(

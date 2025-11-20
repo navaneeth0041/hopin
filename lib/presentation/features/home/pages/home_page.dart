@@ -3,6 +3,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
+import 'package:hopin/presentation/features/home/widgets/payment_notification_banner.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -33,7 +34,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Load trips from TripProvider and get user location
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTrips();
       _getUserLocation();
@@ -84,9 +84,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _onTripsCountChanged(int count) {
-
-  }
+  void _onTripsCountChanged(int count) {}
 
   @override
   Widget build(BuildContext context) {
@@ -95,14 +93,8 @@ class _HomePageState extends State<HomePage> {
 
     return Consumer<TripProvider>(
       builder: (context, tripProvider, child) {
-
         return Scaffold(
-          backgroundColor: const Color.fromARGB(
-            255,
-            17,
-            17,
-            17,
-          ), 
+          backgroundColor: const Color.fromARGB(255, 17, 17, 17),
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -143,7 +135,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      // Bottom Gradient Overlay for Seamless Blending
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -167,7 +158,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      // Header Content
                       const Positioned(
                         top: 0,
                         left: 0,
@@ -187,7 +177,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // Content Section
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
@@ -206,9 +195,9 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(
-                        height: 40,
-                      ), // Reduced space for better blending
+                      const SizedBox(height: 40),
+
+                      const PaymentNotificationBanner(),
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -259,7 +248,8 @@ class _HomePageState extends State<HomePage> {
                                     Text(
                                       _availableTrips.any(
                                             (trip) =>
-                                                trip.createdBy == TripFilterService.getCurrentUserId(),
+                                                trip.createdBy ==
+                                                TripFilterService.getCurrentUserId(),
                                           )
                                           ? 'Your Trips & Nearby'
                                           : 'Available Trips Nearby',
@@ -350,7 +340,6 @@ class _HomePageState extends State<HomePage> {
 
                       const SizedBox(height: 30),
 
-                      // Quick Actions
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20),
                         child: QuickActionButtons(),
@@ -358,7 +347,6 @@ class _HomePageState extends State<HomePage> {
 
                       const SizedBox(height: 30),
 
-                      // Nearby Trips Section
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: NearbyTripsSection(

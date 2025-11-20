@@ -3,6 +3,8 @@ import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/providers/trip_provider.dart';
 import 'package:hopin/data/models/trip.dart';
 import 'package:hopin/data/services/enhanced_trip_service.dart';
+import 'package:hopin/presentation/features/payments/services/payment_guard_service.dart';
+import 'package:hopin/presentation/features/home/widgets/trip_completion_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/updated_create_trip_bottom_sheet.dart';
@@ -33,6 +35,15 @@ class _UpdatedCreateTripPageState extends State<CreateTripPage> {
   }
 
   Future<void> _showCreateTripBottomSheet() async {
+    final canProceed = await PaymentGuardService.checkPaymentStatusBeforeAction(
+      context,
+      actionType: 'create',
+    );
+
+    if (!canProceed) {
+      return;
+    }
+
     final tripProvider = Provider.of<TripProvider>(context, listen: false);
 
     try {
@@ -44,7 +55,7 @@ class _UpdatedCreateTripPageState extends State<CreateTripPage> {
           barrierDismissible: false,
           builder: (context) => ActiveTripDialog(
             activeTrip: activeTrip,
-            onComplete: () => _handleCompleteTrip(activeTrip.id),
+            onComplete: () => _handleCompleteTrip(activeTrip),
             onCancel: () => _handleCancelTrip(activeTrip.id),
           ),
         );
@@ -100,33 +111,51 @@ class _UpdatedCreateTripPageState extends State<CreateTripPage> {
     }
   }
 
-  Future<void> _handleCompleteTrip(String tripId) async {
-    TripDialogHelpers.showLoadingDialog(context, 'Marking trip as complete...');
-
-    final success = await _enhancedService.completeTrip(tripId);
-
+  Future<void> _handleCompleteTrip(Trip trip) async {
     if (mounted) {
-      Navigator.pop(context);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => TripCompletionDialog(
+          trip: trip,
+          onSuccess: () {
+            final tripProvider = Provider.of<TripProvider>(
+              context,
+              listen: false,
+            );
+            tripProvider.loadUserTrips();
 
-      if (success) {
-        TripDialogHelpers.showSuccessDialog(
-          context,
-          title: 'Trip Completed',
-          message: 'Great! Your trip has been marked as complete.',
-          icon: Icons.check_circle_rounded,
-          iconColor: AppColors.accentGreen,
-          onDismiss: () {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) _showCreateTripBottomSheet();
-            });
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: const [
+                      Icon(Icons.check_circle, color: Colors.white, size: 20),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Trip completed and payments recorded!',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: AppColors.accentGreen,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: const EdgeInsets.all(16),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
           },
-        );
-      } else {
-        TripDialogHelpers.showErrorSnackBar(
-          context,
-          'Failed to complete trip. Please try again.',
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -308,7 +337,7 @@ class _UpdatedCreateTripPageState extends State<CreateTripPage> {
                               ? () => _handleCancelTrip(trip.id)
                               : null,
                           onComplete: isCreator && isActive
-                              ? () => _handleCompleteTrip(trip.id)
+                              ? () => _handleCompleteTrip(trip)
                               : null,
                           onLeave: !isCreator && isActive
                               ? () => _handleLeaveTrip(trip)

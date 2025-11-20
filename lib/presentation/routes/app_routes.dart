@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/presentation/features/help_faq/help_faq_screen.dart';
 import 'package:hopin/presentation/features/notifications/notifications_screen.dart';
+import 'package:hopin/presentation/features/payments/screens/payment_history_screen.dart';
 import 'package:hopin/presentation/features/payments/screens/unpaid_trips_screen.dart';
 import 'package:hopin/presentation/features/profile/edit_profile_screen.dart';
 import 'package:hopin/presentation/features/report_support/my_reports_screen.dart';
@@ -51,6 +52,7 @@ class AppRoutes {
       RouteNames.createTrip: (context) => const CreateTripPage(),
       RouteNames.joinTrip: (context) => const JoinTripPage(),
       RouteNames.unpaidTrips: (context) => const UnpaidTripsScreen(),
+      RouteNames.paymentHistory: (context) => const PaymentHistoryScreen(),
     };
   }
 
@@ -134,6 +136,8 @@ class AppRoutes {
 
       case RouteNames.unpaidTrips:
         return MaterialPageRoute(builder: (context) => const UnpaidTripsScreen());
+      case RouteNames.paymentHistory:
+        return MaterialPageRoute(builder: (context) => const PaymentHistoryScreen());
 
       case RouteNames.tripHistory:
       case RouteNames.notificationSettings:

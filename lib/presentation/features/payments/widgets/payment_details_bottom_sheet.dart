@@ -8,11 +8,13 @@ import 'package:intl/intl.dart';
 class PaymentDetailsBottomSheet extends StatefulWidget {
   final TripPayment payment;
   final bool isCreator;
+  final VoidCallback? onPaymentMarked;
 
   const PaymentDetailsBottomSheet({
     super.key,
     required this.payment,
     required this.isCreator,
+    this.onPaymentMarked,
   });
 
   @override
@@ -38,11 +40,11 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
+          _buildDragHandle(),
           _buildHeader(),
           _buildPaymentSummary(),
-          Flexible(
+          Expanded(
             child: _buildMembersList(),
           ),
           if (widget.isCreator && !widget.payment.isFullyPaid)
@@ -52,97 +54,100 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
     );
   }
 
+  Widget _buildDragHandle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Container(
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.divider,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: AppColors.divider.withOpacity(0.3)),
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
           Container(
-            width: 40,
-            height: 4,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.divider,
-              borderRadius: BorderRadius.circular(2),
+              color: widget.payment.isFullyPaid
+                  ? AppColors.accentGreen.withOpacity(0.1)
+                  : AppColors.primaryYellow.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              widget.payment.isFullyPaid
+                  ? Icons.check_circle
+                  : Icons.payment,
+              color: widget.payment.isFullyPaid
+                  ? AppColors.accentGreen
+                  : AppColors.primaryYellow,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: widget.payment.isFullyPaid
-                      ? AppColors.accentGreen.withOpacity(0.1)
-                      : AppColors.primaryYellow.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   widget.payment.isFullyPaid
-                      ? Icons.check_circle
-                      : Icons.payment,
-                  color: widget.payment.isFullyPaid
-                      ? AppColors.accentGreen
-                      : AppColors.primaryYellow,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.payment.isFullyPaid
-                          ? 'All Payments Received'
-                          : 'Payment Status',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('MMM dd, yyyy').format(
-                        widget.payment.completedAt,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!widget.payment.isFullyPaid)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentOrange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.accentOrange.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    '${widget.payment.pendingCount} Pending',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.accentOrange,
-                    ),
+                      ? 'All Payments Received'
+                      : 'Payment Status',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('MMM dd, yyyy').format(
+                    widget.payment.completedAt,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
+          if (!widget.payment.isFullyPaid)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.accentOrange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.accentOrange.withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                '${widget.payment.pendingCount} Pending',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accentOrange,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -443,6 +448,9 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
       if (success) {
         setState(() => _selectedMemberId = null);
         _noteController.clear();
+        
+        widget.onPaymentMarked?.call();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -459,6 +467,10 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
             ),
           ),
         );
+        
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) Navigator.pop(context);
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

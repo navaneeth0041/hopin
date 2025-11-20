@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/trip.dart';
 import 'package:hopin/data/providers/trip_payment_provider.dart';
+import 'package:hopin/data/services/enhanced_trip_service.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TripCompletionDialog extends StatefulWidget {
   final Trip trip;
@@ -22,6 +24,7 @@ class TripCompletionDialog extends StatefulWidget {
 class _TripCompletionDialogState extends State<TripCompletionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+  final EnhancedTripService _enhancedService = EnhancedTripService();
   bool _isProcessing = false;
 
   @override
@@ -36,23 +39,45 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
     setState(() => _isProcessing = true);
 
     final amount = double.tryParse(_amountController.text.trim()) ?? 0;
-    
+
     if (amount <= 0) {
       setState(() => _isProcessing = false);
       _showError('Please enter a valid amount');
       return;
     }
 
+    final tripCompleted = await _enhancedService.completeTrip(widget.trip.id);
+
+    if (!tripCompleted) {
+      setState(() => _isProcessing = false);
+      _showError('Failed to complete trip');
+      return;
+    }
+
+    final memberNames = <String, String>{};
+    for (final memberId in widget.trip.joinedUsers) {
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(memberId)
+            .get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final details = userData?['details'] as Map<String, dynamic>?;
+          memberNames[memberId] = details?['fullName'] ?? 'Unknown User';
+        } else {
+          memberNames[memberId] = 'Unknown User';
+        }
+      } catch (e) {
+        memberNames[memberId] = 'Unknown User';
+      }
+    }
+
     final paymentProvider = Provider.of<TripPaymentProvider>(
       context,
       listen: false,
     );
-
-    // Get member names from trip - fetch from Firestore if needed
-    final memberNames = <String, String>{};
-    for (final memberId in widget.trip.joinedUsers) {
-      memberNames[memberId] = 'Member'; // You might want to fetch actual names
-    }
 
     final result = await paymentProvider.createPayment(
       tripId: widget.trip.id,
@@ -101,7 +126,7 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Payment Split Created!',
+                  'Trip Completed!',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -145,7 +170,7 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.info_outline,
                         size: 16,
                         color: AppColors.accentBlue,
@@ -199,10 +224,7 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         Text(
           value,
@@ -242,9 +264,7 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
       backgroundColor: AppColors.cardBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.8,
-        ),
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.8),
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -295,7 +315,7 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -324,16 +344,18 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _buildSummaryRow('Route', 
-                          '${widget.trip.currentLocation} → ${widget.trip.destination}'),
+                        _buildSummaryRow(
+                          'Route',
+                          '${widget.trip.currentLocation} → ${widget.trip.destination}',
+                        ),
                         const SizedBox(height: 8),
                         _buildSummaryRow('Total Members', '$memberCount'),
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   const Text(
                     'Total Trip Amount (₹)',
                     style: TextStyle(
@@ -343,12 +365,16 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   TextFormField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      ),
                     ],
                     style: const TextStyle(
                       color: AppColors.textPrimary,
@@ -395,7 +421,9 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.accentRed),
+                        borderSide: const BorderSide(
+                          color: AppColors.accentRed,
+                        ),
                       ),
                     ),
                     validator: (value) {
@@ -409,12 +437,12 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                       return null;
                     },
                     onChanged: (value) {
-                      setState(() {}); // Rebuild to update preview
+                      setState(() {});
                     },
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   if (_amountController.text.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -468,14 +496,16 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
                         ],
                       ),
                     ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isProcessing ? null : () => Navigator.pop(context),
+                          onPressed: _isProcessing
+                              ? null
+                              : () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: const BorderSide(color: AppColors.divider),
@@ -542,10 +572,7 @@ class _TripCompletionDialogState extends State<TripCompletionDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         Flexible(
           child: Text(
