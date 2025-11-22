@@ -7,6 +7,7 @@ class ProfileMenuItem extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final Color? iconColor;
+  final Widget? trailing;
 
   const ProfileMenuItem({
     super.key,
@@ -15,6 +16,7 @@ class ProfileMenuItem extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.iconColor,
+    this.trailing,
   });
 
   @override
@@ -36,7 +38,11 @@ class ProfileMenuItem extends StatelessWidget {
                 color: const Color(0xFF2C2C2E),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppColors.primaryYellow, size: 24),
+              child: Icon(
+                icon,
+                color: iconColor ?? AppColors.primaryYellow,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -45,7 +51,7 @@ class ProfileMenuItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -54,7 +60,7 @@ class ProfileMenuItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
@@ -62,11 +68,12 @@ class ProfileMenuItem extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.textSecondary,
-              size: 16,
-            ),
+            trailing ??
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.textSecondary,
+                  size: 16,
+                ),
           ],
         ),
       ),

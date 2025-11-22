@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/providers/auth_provider.dart';
 import 'package:hopin/data/providers/user_profile_provider.dart';
-import 'package:hopin/data/providers/trip_payment_provider.dart';
-import 'package:hopin/presentation/features/payments/screens/payment_history_screen.dart';
-import 'package:hopin/presentation/features/payments/screens/unpaid_trips_screen.dart';
 import 'package:provider/provider.dart';
 import 'widgets/settings_header.dart';
 import 'widgets/settings_menu_item.dart';
@@ -70,10 +67,6 @@ class SettingsScreen extends StatelessWidget {
 
                     const SizedBox(height: 32),
 
-                    _buildPaymentsSection(context),
-
-                    const SizedBox(height: 32),
-
                     _buildSectionHeader('Account'),
                     const SizedBox(height: 12),
 
@@ -97,30 +90,30 @@ class SettingsScreen extends StatelessWidget {
                       },
                     ),
 
-                    const SizedBox(height: 32),
+                    // const SizedBox(height: 32),
 
-                    _buildSectionHeader('Preferences'),
-                    const SizedBox(height: 12),
+                    // _buildSectionHeader('Preferences'),
+                    // const SizedBox(height: 12),
 
-                    SettingsMenuItem(
-                      icon: Icons.notifications_outlined,
-                      title: 'Notifications',
-                      subtitle: 'Manage notification preferences',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/notification-settings');
-                      },
-                    ),
+                    // SettingsMenuItem(
+                    //   icon: Icons.notifications_outlined,
+                    //   title: 'Notifications',
+                    //   subtitle: 'Manage notification preferences',
+                    //   onTap: () {
+                    //     Navigator.pushNamed(context, '/notification-settings');
+                    //   },
+                    // ),
 
-                    const SizedBox(height: 16),
+                    // const SizedBox(height: 16),
 
-                    SettingsMenuItem(
-                      icon: Icons.location_on_outlined,
-                      title: 'Location Settings',
-                      subtitle: 'Control GPS and location access',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/location-settings');
-                      },
-                    ),
+                    // SettingsMenuItem(
+                    //   icon: Icons.location_on_outlined,
+                    //   title: 'Location Settings',
+                    //   subtitle: 'Control GPS and location access',
+                    //   onTap: () {
+                    //     Navigator.pushNamed(context, '/location-settings');
+                    //   },
+                    // ),
 
                     const SizedBox(height: 32),
 
@@ -281,100 +274,6 @@ class SettingsScreen extends StatelessWidget {
           letterSpacing: 0.5,
         ),
       ),
-    );
-  }
-
-  Widget _buildPaymentsSection(BuildContext context) {
-    return Consumer<TripPaymentProvider>(
-      builder: (context, paymentProvider, child) {
-        final unpaidCount = paymentProvider.unpaidTripDetails.length;
-        final hasUnpaid = unpaidCount > 0;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader('Payments'),
-            const SizedBox(height: 12),
-
-            SettingsMenuItem(
-              icon: Icons.receipt_long,
-              title: 'Payment History',
-              subtitle: 'View all payment records',
-              iconColor: AppColors.primaryYellow,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PaymentHistoryScreen(),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            Stack(
-              children: [
-                SettingsMenuItem(
-                  icon: Icons.payment,
-                  title: 'Pending Payments',
-                  subtitle: hasUnpaid
-                      ? '$unpaidCount ${unpaidCount == 1 ? 'payment' : 'payments'} pending'
-                      : 'No pending payments',
-                  iconColor: hasUnpaid
-                      ? AppColors.accentRed
-                      : AppColors.accentGreen,
-                  trailing: hasUnpaid
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accentRed,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$unpaidCount',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Icon(
-                          Icons.check_circle,
-                          color: AppColors.accentGreen,
-                          size: 20,
-                        ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const UnpaidTripsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                if (hasUnpaid)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.accentRed,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 }
