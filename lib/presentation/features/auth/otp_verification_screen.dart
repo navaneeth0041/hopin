@@ -3,8 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/presentation/common_widgets/custom_button.dart';
-import 'package:hopin/presentation/common_widgets/otp_input_field.dart';
-import 'dart:async';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -16,86 +14,37 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final List<TextEditingController> _otpControllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  bool _isResending = false;
 
-  Timer? _timer;
-  int _remainingSeconds = 120;
-  bool _canResend = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _startTimer();
+  void _continueToLogin() {
+    // Navigate to login screen so user can sign in after verifying
+    Navigator.pushNamedAndRemoveUntil(
+      context, 
+      '/login', 
+      (route) => false,
+    );
   }
 
-  void _startTimer() {
-    _canResend = false;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_remainingSeconds > 0) {
-          _remainingSeconds--;
-        } else {
-          _canResend = true;
-          _timer?.cancel();
-        }
-      });
+  Future<void> _resendLink() async {
+    setState(() {
+      _isResending = true;
     });
-  }
 
-  String _formatTime(int seconds) {
-    int minutes = seconds ~/ 60;
-    int secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
+    // Simulate API call delay
+    await Future.delayed(const Duration(seconds: 2));
 
-  void _onOtpChanged(String value, int index) {
-    if (value.isNotEmpty && index < 5) {
-      _focusNodes[index + 1].requestFocus();
-    } else if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
-    }
-  }
-
-  void _resendOtp() {
-    if (_canResend) {
-      _startTimer();
+    if (mounted) {
       setState(() {
-        for (var controller in _otpControllers) {
-          controller.clear();
-        }
+        _isResending = false;
       });
-      _focusNodes[0].requestFocus();
-    }
-  }
-
-  void _verifyOtp() {
-    String otp = _otpControllers.map((c) => c.text).join();
-    if (otp.length == 6) {
-      Navigator.pushReplacementNamed(context, '/login');
-    } else {
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter all 6 digits of the OTP'),
-          duration: Duration(seconds: 2),
+          content: Text('Verification link resent! Check your email.'),
+          backgroundColor: AppColors.accentGreen,
         ),
       );
     }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    for (var controller in _otpControllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
-    super.dispose();
   }
 
   @override
@@ -107,25 +56,46 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: AppColors.textPrimary,
-                    size: 20,
+                // Back Button aligned left
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
                 ),
 
                 const SizedBox(height: 40),
 
+                // Big Email Icon with Glow Effect
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryYellow.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.mark_email_read_outlined,
+                    size: 60,
+                    color: AppColors.primaryYellow,
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
                 const Text(
-                  'Verify Your Email',
+                  'Check Your Email',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -137,14 +107,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 const SizedBox(height: 16),
 
                 RichText(
+                  textAlign: TextAlign.center,
                   text: TextSpan(
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 16,
                       color: AppColors.textSecondary,
                       height: 1.5,
                     ),
                     children: [
-                      const TextSpan(text: 'Enter the 6-digit code sent to\n'),
+                      const TextSpan(text: 'We have sent a verification link to\n'),
                       TextSpan(
                         text: widget.email,
                         style: const TextStyle(
@@ -156,85 +127,90 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 24),
+
+                // Specific Instructions Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.textSecondary.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AppColors.textSecondary, size: 20),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Verification Required',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Please check your Outlook Main, Junk, or Spam folders. You must verify your email to continue using the app.',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 48),
+
+                CustomButton(
+                  text: 'Continue to Login',
+                  onPressed: _continueToLogin,
+                ),
+
+                const SizedBox(height: 24),
 
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(
-                    6,
-                    (index) => OtpInputField(
-                      controller: _otpControllers[index],
-                      focusNode: _focusNodes[index],
-                      onChanged: (value) => _onOtpChanged(value, index),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                Center(
-                  child: Text(
-                    _canResend
-                        ? 'Code expired'
-                        : 'Code expires in ${_formatTime(_remainingSeconds)}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: _canResend
-                          ? AppColors.accentRed
-                          : AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                Center(
-                  child: TextButton(
-                    onPressed: _canResend ? _resendOtp : null,
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryYellow,
-                      disabledForegroundColor: AppColors.textTertiary
-                          .withOpacity(0.5),
-                    ),
-                    child: Text(
-                      'Resend OTP',
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Didn't receive the link?",
                       style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: _canResend
-                            ? AppColors.primaryYellow
-                            : AppColors.textTertiary,
+                        fontSize: 14,
+                        color: AppColors.textSecondary.withOpacity(0.8),
                       ),
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-                Center(
-                  child: Text(
-                    "Didn't receive code?",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary.withOpacity(0.8),
+                    TextButton(
+                      onPressed: _isResending ? null : _resendLink,
+                      child: _isResending
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primaryYellow,
+                              ),
+                            )
+                          : const Text(
+                              'Resend Link',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryYellow,
+                              ),
+                            ),
                     ),
-                  ),
+                  ],
                 ),
-
-                const SizedBox(height: 8),
-
-                Center(
-                  child: Text(
-                    'Check your spam folder or try resending',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textTertiary.withOpacity(0.8),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 48),
-                CustomButton(text: 'Verify', onPressed: _verifyOtp),
 
                 const SizedBox(height: 32),
               ],
