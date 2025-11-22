@@ -23,8 +23,9 @@ class PaymentDetailsBottomSheet extends StatefulWidget {
 }
 
 class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
-  String? _selectedMemberId;
+  final Set<String> _selectedMemberIds = {};
   final _noteController = TextEditingController();
+  bool _isProcessing = false;
 
   @override
   void dispose() {
@@ -42,10 +43,16 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
       child: Column(
         children: [
           _buildDragHandle(),
-          _buildHeader(),
-          _buildPaymentSummary(),
           Expanded(
-            child: _buildMembersList(),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  _buildPaymentSummary(),
+                  _buildMembersSection(),
+                ],
+              ),
+            ),
           ),
           if (widget.isCreator && !widget.payment.isFullyPaid)
             _buildMarkAsPaidButton(),
@@ -89,9 +96,7 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              widget.payment.isFullyPaid
-                  ? Icons.check_circle
-                  : Icons.payment,
+              widget.payment.isFullyPaid ? Icons.check_circle : Icons.payment,
               color: widget.payment.isFullyPaid
                   ? AppColors.accentGreen
                   : AppColors.primaryYellow,
@@ -115,9 +120,7 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  DateFormat('MMM dd, yyyy').format(
-                    widget.payment.completedAt,
-                  ),
+                  DateFormat('MMM dd, yyyy').format(widget.payment.completedAt),
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -128,10 +131,7 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
           ),
           if (!widget.payment.isFullyPaid)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.accentOrange.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
@@ -170,10 +170,7 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
             isTotal: true,
           ),
           const SizedBox(height: 12),
-          Container(
-            height: 1,
-            color: AppColors.divider.withOpacity(0.3),
-          ),
+          Container(height: 1, color: AppColors.divider.withOpacity(0.3)),
           const SizedBox(height: 12),
           _buildSummaryRow(
             'Per Person Share',
@@ -191,6 +188,16 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
             '${widget.payment.paidCount}',
             valueColor: AppColors.accentGreen,
           ),
+          if (_selectedMemberIds.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(height: 1, color: AppColors.divider.withOpacity(0.3)),
+            const SizedBox(height: 12),
+            _buildSummaryRow(
+              'Selected',
+              '${_selectedMemberIds.length} member${_selectedMemberIds.length > 1 ? 's' : ''}',
+              valueColor: AppColors.primaryYellow,
+            ),
+          ],
         ],
       ),
     );
@@ -219,7 +226,8 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
           style: TextStyle(
             fontSize: isTotal ? 18 : 16,
             fontWeight: FontWeight.bold,
-            color: valueColor ??
+            color:
+                valueColor ??
                 (highlight ? AppColors.primaryYellow : AppColors.textPrimary),
           ),
         ),
@@ -227,34 +235,68 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
     );
   }
 
-  Widget _buildMembersList() {
+  Widget _buildMembersSection() {
     final members = widget.payment.memberPayments.entries.toList();
 
-    return ListView.separated(
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: members.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final entry = members[index];
-        final memberId = entry.key;
-        final payment = entry.value;
-
-        return _buildMemberCard(memberId, payment);
-      },
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Members',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          ...members.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildMemberCard(entry.key, entry.value),
+            );
+          }).toList(),
+        ],
+      ),
     );
   }
 
+  // Widget _buildMembersList() {
+  //   final members = widget.payment.memberPayments.entries.toList();
+
+  //   return ListView.separated(
+  //     padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+  //     itemCount: members.length,
+  //     separatorBuilder: (context, index) => const SizedBox(height: 12),
+  //     itemBuilder: (context, index) {
+  //       final entry = members[index];
+  //       final memberId = entry.key;
+  //       final payment = entry.value;
+
+  //       return _buildMemberCard(memberId, payment);
+  //     },
+  //   );
+  // }
+
   Widget _buildMemberCard(String memberId, MemberPayment payment) {
-    final isSelected = _selectedMemberId == memberId;
+    final isSelected = _selectedMemberIds.contains(memberId);
     final isPaid = payment.status == PaymentStatus.paid;
     final isDisputed = payment.status == PaymentStatus.disputed;
+    final canSelect = widget.isCreator && !isPaid && !_isProcessing;
 
     return GestureDetector(
-      onTap: widget.isCreator && !isPaid
+      onTap: canSelect
           ? () {
               setState(() {
-                _selectedMemberId = isSelected ? null : memberId;
+                if (isSelected) {
+                  _selectedMemberIds.remove(memberId);
+                } else {
+                  _selectedMemberIds.add(memberId);
+                }
               });
             }
           : null,
@@ -265,17 +307,19 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
           color: isPaid
               ? AppColors.accentGreen.withOpacity(0.05)
               : isDisputed
-                  ? AppColors.accentRed.withOpacity(0.05)
-                  : AppColors.darkBackground,
+              ? AppColors.accentRed.withOpacity(0.05)
+              : isSelected
+              ? AppColors.primaryYellow.withOpacity(0.1)
+              : AppColors.darkBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
                 ? AppColors.primaryYellow
                 : isPaid
-                    ? AppColors.accentGreen.withOpacity(0.3)
-                    : isDisputed
-                        ? AppColors.accentRed.withOpacity(0.3)
-                        : AppColors.divider.withOpacity(0.3),
+                ? AppColors.accentGreen.withOpacity(0.3)
+                : isDisputed
+                ? AppColors.accentRed.withOpacity(0.3)
+                : AppColors.divider.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -284,25 +328,52 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: isPaid
-                      ? AppColors.accentGreen.withOpacity(0.2)
-                      : isDisputed
-                          ? AppColors.accentRed.withOpacity(0.2)
-                          : AppColors.primaryYellow.withOpacity(0.2),
-                  child: Text(
-                    payment.userName[0].toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isPaid
-                          ? AppColors.accentGreen
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: isPaid
+                          ? AppColors.accentGreen.withOpacity(0.2)
                           : isDisputed
+                          ? AppColors.accentRed.withOpacity(0.2)
+                          : isSelected
+                          ? AppColors.primaryYellow.withOpacity(0.2)
+                          : AppColors.primaryYellow.withOpacity(0.2),
+                      child: Text(
+                        payment.userName[0].toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isPaid
+                              ? AppColors.accentGreen
+                              : isDisputed
                               ? AppColors.accentRed
                               : AppColors.primaryYellow,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (isSelected)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryYellow,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.darkBackground,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            size: 12,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -402,7 +473,9 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _selectedMemberId != null ? _handleMarkAsPaid : null,
+            onPressed: _selectedMemberIds.isNotEmpty && !_isProcessing
+                ? _handleMarkAsPaid
+                : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accentGreen,
               foregroundColor: Colors.white,
@@ -412,13 +485,24 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
               ),
               disabledBackgroundColor: AppColors.divider,
             ),
-            child: const Text(
-              'Mark as Paid',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: _isProcessing
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    _selectedMemberIds.isEmpty
+                        ? 'Select members to mark as paid'
+                        : 'Mark ${_selectedMemberIds.length} as Paid',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -426,38 +510,56 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
   }
 
   Future<void> _handleMarkAsPaid() async {
-    if (_selectedMemberId == null) return;
+    if (_selectedMemberIds.isEmpty || _isProcessing) return;
 
     final confirmed = await _showConfirmationDialog();
     if (!confirmed) return;
 
-    final provider = Provider.of<TripPaymentProvider>(
-      context,
-      listen: false,
-    );
+    setState(() => _isProcessing = true);
 
-    final success = await provider.markAsPaid(
-      paymentId: widget.payment.id,
-      memberId: _selectedMemberId!,
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
-    );
+    final provider = Provider.of<TripPaymentProvider>(context, listen: false);
+
+    int successCount = 0;
+    int failureCount = 0;
+    final selectedIds = List<String>.from(_selectedMemberIds);
+
+    for (final memberId in selectedIds) {
+      final success = await provider.markAsPaid(
+        paymentId: widget.payment.id,
+        memberId: memberId,
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
+      );
+
+      if (success) {
+        successCount++;
+        setState(() => _selectedMemberIds.remove(memberId));
+      } else {
+        failureCount++;
+      }
+    }
+
+    setState(() => _isProcessing = false);
 
     if (mounted) {
-      if (success) {
-        setState(() => _selectedMemberId = null);
+      if (successCount > 0) {
         _noteController.clear();
-        
         widget.onPaymentMarked?.call();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
-                const Expanded(child: Text('Payment marked as received')),
+                Expanded(
+                  child: Text(
+                    successCount == 1
+                        ? 'Payment marked as received'
+                        : '$successCount payments marked as received',
+                  ),
+                ),
               ],
             ),
             backgroundColor: AppColors.accentGreen,
@@ -467,11 +569,15 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
             ),
           ),
         );
-        
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) Navigator.pop(context);
-        });
-      } else {
+
+        if (failureCount == 0) {
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) Navigator.pop(context);
+          });
+        }
+      }
+
+      if (failureCount > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -479,7 +585,11 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(provider.errorMessage ?? 'Failed to mark as paid'),
+                  child: Text(
+                    failureCount == 1
+                        ? 'Failed to mark 1 payment'
+                        : 'Failed to mark $failureCount payments',
+                  ),
                 ),
               ],
             ),
@@ -495,8 +605,17 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
   }
 
   Future<bool> _showConfirmationDialog() async {
-    final member = widget.payment.memberPayments[_selectedMemberId!];
-    if (member == null) return false;
+    final selectedMembers = _selectedMemberIds
+        .map((id) => widget.payment.memberPayments[id])
+        .where((payment) => payment != null)
+        .toList();
+
+    if (selectedMembers.isEmpty) return false;
+
+    final totalAmount = selectedMembers.fold<double>(
+      0,
+      (sum, payment) => sum + payment!.amountDue,
+    );
 
     return await showDialog<bool>(
           context: context,
@@ -524,7 +643,7 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'Confirm Payment',
+                    'Confirm Payments',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -533,13 +652,52 @@ class _PaymentDetailsBottomSheetState extends State<PaymentDetailsBottomSheet> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Mark ${member.userName}\'s payment of ₹${member.amountDue.toStringAsFixed(2)} as received?',
+                    selectedMembers.length == 1
+                        ? 'Mark ${selectedMembers[0]!.userName}\'s payment of ₹${selectedMembers[0]!.amountDue.toStringAsFixed(2)} as received?'
+                        : 'Mark ${selectedMembers.length} payments totaling ₹${totalAmount.toStringAsFixed(2)} as received?',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
                   ),
+                  if (selectedMembers.length > 1) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: selectedMembers.map((payment) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  payment!.userName,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  '₹${payment.amountDue.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryYellow,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   TextField(
                     controller: _noteController,

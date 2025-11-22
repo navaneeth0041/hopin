@@ -68,7 +68,6 @@ class TripPaymentProvider extends ChangeNotifier {
       );
 
       if (result['success']) {
-        // Reload payment details
         if (_currentPayment != null) {
           await loadTripPayment(_currentPayment!.tripId);
         }
@@ -101,23 +100,18 @@ class TripPaymentProvider extends ChangeNotifier {
   Future<Map<String, dynamic>> checkPaymentStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return {
-        'hasUnpaidTrips': false,
-        'unpaidCount': 0,
-        'totalUnpaid': 0.0,
-      };
+      return {'hasUnpaidTrips': false, 'unpaidCount': 0, 'totalUnpaid': 0.0};
     }
 
     try {
       final status = await _service.checkUserPaymentStatus(user.uid);
-      
-      // Also load detailed information
+
       if (status['hasUnpaidTrips']) {
         _unpaidTripDetails = await _service.getUserUnpaidTripDetails(user.uid);
       } else {
         _unpaidTripDetails = [];
       }
-      
+
       notifyListeners();
       return status;
     } catch (e) {

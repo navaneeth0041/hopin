@@ -6,7 +6,6 @@ class TripPaymentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Create payment record when trip is completed
   Future<Map<String, dynamic>> createTripPayment({
     required String tripId,
     required double totalAmount,
@@ -19,16 +18,13 @@ class TripPaymentService {
         return {'success': false, 'error': 'User not authenticated'};
       }
 
-      // Validate amount
       if (totalAmount <= 0) {
         return {'success': false, 'error': 'Amount must be greater than 0'};
       }
 
-      // Calculate per person share (including creator)
-      final totalMembers = memberIds.length + 1; // +1 for creator
+      final totalMembers = memberIds.length + 1;
       final perPersonShare = totalAmount / totalMembers;
 
-      // Create member payments map
       final memberPayments = <String, MemberPayment>{};
       for (final memberId in memberIds) {
         memberPayments[memberId] = MemberPayment(
@@ -51,13 +47,11 @@ class TripPaymentService {
         createdAt: DateTime.now(),
       );
 
-      // Save payment record
       await _firestore
           .collection('tripPayments')
           .doc(paymentId)
           .set(payment.toMap());
 
-      // Update unpaid records for each member
       for (final memberId in memberIds) {
         await _updateUserPaymentRecord(
           memberId,
@@ -67,7 +61,6 @@ class TripPaymentService {
         );
       }
 
-      // Send notifications to all members
       await _sendPaymentNotifications(
         tripId: tripId,
         memberIds: memberIds,
@@ -85,7 +78,6 @@ class TripPaymentService {
     }
   }
 
-  // Mark a member as paid
   Future<Map<String, dynamic>> markMemberAsPaid({
     required String paymentId,
     required String memberId,
@@ -108,15 +100,13 @@ class TripPaymentService {
 
       final payment = TripPayment.fromMap(paymentDoc.data()!);
 
-      // Verify user is the creator
       if (payment.creatorId != user.uid) {
         return {
           'success': false,
-          'error': 'Only trip creator can mark payments'
+          'error': 'Only trip creator can mark payments',
         };
       }
 
-      // Update member payment status
       final updatedMemberPayment = payment.memberPayments[memberId]?.copyWith(
         status: PaymentStatus.paid,
         paidAt: DateTime.now(),
@@ -125,7 +115,10 @@ class TripPaymentService {
       );
 
       if (updatedMemberPayment == null) {
-        return {'success': false, 'error': 'Member not found in payment record'};
+        return {
+          'success': false,
+          'error': 'Member not found in payment record',
+        };
       }
 
       final updatedMemberPayments = Map<String, MemberPayment>.from(
@@ -133,7 +126,6 @@ class TripPaymentService {
       );
       updatedMemberPayments[memberId] = updatedMemberPayment;
 
-      // Check if all payments are complete
       final allPaid = updatedMemberPayments.values.every(
         (p) => p.status == PaymentStatus.paid,
       );
@@ -144,7 +136,6 @@ class TripPaymentService {
         'lastUpdatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Remove from user's unpaid records
       await _updateUserPaymentRecord(
         memberId,
         payment.tripId,
@@ -152,7 +143,6 @@ class TripPaymentService {
         isAdding: false,
       );
 
-      // Send notification to member
       await _sendPaymentConfirmationNotification(
         tripId: payment.tripId,
         userId: memberId,
@@ -165,7 +155,6 @@ class TripPaymentService {
     }
   }
 
-  // Check if user has unpaid trips
   Future<Map<String, dynamic>> checkUserPaymentStatus(String userId) async {
     try {
       final doc = await _firestore
@@ -183,7 +172,7 @@ class TripPaymentService {
       }
 
       final record = UserPaymentRecord.fromMap(doc.data()!);
-      
+
       return {
         'hasUnpaidTrips': record.hasUnpaidTrips,
         'unpaidCount': record.unpaidTripIds.length,
@@ -201,7 +190,6 @@ class TripPaymentService {
     }
   }
 
-  // Get payment details for a trip
   Future<TripPayment?> getTripPayment(String tripId) async {
     try {
       final snapshot = await _firestore
@@ -218,7 +206,6 @@ class TripPaymentService {
     }
   }
 
-  // Get user's unpaid trip details
   Future<List<Map<String, dynamic>>> getUserUnpaidTripDetails(
     String userId,
   ) async {
@@ -238,14 +225,13 @@ class TripPaymentService {
         if (payment != null) {
           final memberPayment = payment.memberPayments[userId];
           if (memberPayment != null) {
-            // Get trip details
             final tripDoc = await _firestore
                 .collection('trips')
                 .doc(tripId)
                 .get();
-            
+
             final tripData = tripDoc.data();
-            
+
             unpaidDetails.add({
               'tripId': tripId,
               'amount': memberPayment.amountDue,
@@ -263,7 +249,6 @@ class TripPaymentService {
     }
   }
 
-  // Private helper methods
   Future<void> _updateUserPaymentRecord(
     String userId,
     String tripId,
@@ -271,17 +256,20 @@ class TripPaymentService {
     required bool isAdding,
   }) async {
     final docRef = _firestore.collection('userPaymentRecords').doc(userId);
-    
+
     await _firestore.runTransaction((transaction) async {
       final doc = await transaction.get(docRef);
-      
+
       if (!doc.exists) {
         if (isAdding) {
-          transaction.set(docRef, UserPaymentRecord(
-            userId: userId,
-            unpaidTripIds: [tripId],
-            totalUnpaidAmount: amount,
-          ).toMap());
+          transaction.set(
+            docRef,
+            UserPaymentRecord(
+              userId: userId,
+              unpaidTripIds: [tripId],
+              totalUnpaidAmount: amount,
+            ).toMap(),
+          );
         }
       } else {
         final record = UserPaymentRecord.fromMap(doc.data()!);
@@ -322,17 +310,19 @@ class TripPaymentService {
           'tripId': tripId,
           'type': 'payment_due',
           'title': 'Trip Payment Due',
-          'message': 'Your share is ₹${perPersonShare.toStringAsFixed(2)} for the completed trip',
+          'message':
+              'Your share is ₹${perPersonShare.toStringAsFixed(2)} for the completed trip',
           'data': {
             'amount': perPersonShare,
             'totalAmount': totalAmount,
-            'dueDate': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+            'dueDate': DateTime.now()
+                .add(const Duration(days: 7))
+                .toIso8601String(),
           },
           'isRead': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
       } catch (e) {
-        // Log error but continue with other notifications
         print('Error sending payment notification to $memberId: $e');
       }
     }
@@ -350,17 +340,17 @@ class TripPaymentService {
         'tripId': tripId,
         'type': 'payment_confirmed',
         'title': 'Payment Confirmed',
-        'message': 'Your payment of ₹${amount.toStringAsFixed(2)} has been confirmed',
+        'message':
+            'Your payment of ₹${amount.toStringAsFixed(2)} has been confirmed',
         'data': {'amount': amount},
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Error sending payment confirmation: $e');
+      return;
     }
   }
 
-  // Dispute handling (future enhancement)
   Future<Map<String, dynamic>> raisePaymentDispute({
     required String paymentId,
     required String reason,
@@ -387,14 +377,12 @@ class TripPaymentService {
         return {'success': false, 'error': 'You are not part of this payment'};
       }
 
-      // Update status to disputed
       await _firestore.collection('tripPayments').doc(paymentId).update({
         'memberPayments.${user.uid}.status': 'disputed',
         'memberPayments.${user.uid}.note': reason,
         'lastUpdatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Notify creator about dispute
       await _firestore.collection('notifications').add({
         'userId': payment.creatorId,
         'tripId': payment.tripId,
