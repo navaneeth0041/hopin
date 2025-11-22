@@ -29,6 +29,9 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
   final _areaController = TextEditingController();
   String _newDriverType = 'auto';
 
+  // Form Key for Validation
+  final _formKey = GlobalKey<FormState>();
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -38,7 +41,7 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
     super.dispose();
   }
 
-  // ---- COOLER UI BOTTOM SHEET ----
+  // ---- COOLER UI BOTTOM SHEET WITH FIREBASE INTEGRATION ----
   void _showAddDriverBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -127,76 +130,118 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                     Expanded(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInputLabel('Full Name'),
-                            CustomTextField(
-                              controller: _nameController,
-                              hintText: 'Enter driver name',
-                              textCapitalization: TextCapitalization.words,
-                              suffixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: 20),
-                            
-                            _buildInputLabel('Phone Number'),
-                            CustomTextField(
-                              controller: _phoneController,
-                              hintText: '+91 XXXXX XXXXX',
-                              keyboardType: TextInputType.phone,
-                              suffixIcon: Icon(Icons.phone_outlined, color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: 20),
-                            
-                            _buildInputLabel('Vehicle Type'),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildSelectionCard(
-                                    label: 'Auto Rickshaw',
-                                    icon: Icons.airport_shuttle,
-                                    isSelected: _newDriverType == 'auto',
-                                    onTap: () => setSheetState(() => _newDriverType = 'auto'),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildInputLabel('Full Name'),
+                              CustomTextField(
+                                controller: _nameController,
+                                hintText: 'Enter driver name',
+                                textCapitalization: TextCapitalization.words,
+                                suffixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Driver name is required';
+                                  }
+                                  if (value.trim().length < 3) {
+                                    return 'Name must be at least 3 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              
+                              _buildInputLabel('Phone Number'),
+                              CustomTextField(
+                                controller: _phoneController,
+                                hintText: '9876543210',
+                                keyboardType: TextInputType.phone,
+                                suffixIcon: Icon(Icons.phone_outlined, color: AppColors.textSecondary),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Phone number is required';
+                                  }
+                                  // Regex: 10 digits starting with 6-9. No symbols.
+                                  final strictPhoneRegex = RegExp(r'^[6-9]\d{9}$');
+                                  
+                                  if (!strictPhoneRegex.hasMatch(value)) {
+                                    return 'Invalid format. Enter 10 digits starting with 6-9\n(e.g., 9876543210)';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              
+                              _buildInputLabel('Vehicle Type'),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildSelectionCard(
+                                      label: 'Auto Rickshaw',
+                                      icon: Icons.airport_shuttle,
+                                      isSelected: _newDriverType == 'auto',
+                                      onTap: () => setSheetState(() => _newDriverType = 'auto'),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildSelectionCard(
-                                    label: 'Taxi / Car',
-                                    icon: Icons.local_taxi,
-                                    isSelected: _newDriverType == 'taxi',
-                                    onTap: () => setSheetState(() => _newDriverType = 'taxi'),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildSelectionCard(
+                                      label: 'Taxi / Car',
+                                      icon: Icons.local_taxi,
+                                      isSelected: _newDriverType == 'taxi',
+                                      onTap: () => setSheetState(() => _newDriverType = 'taxi'),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
 
-                            _buildInputLabel('Vehicle Number'),
-                            CustomTextField(
-                              controller: _vehicleNoController,
-                              hintText: 'e.g. KL-01-AB-1234',
-                              textCapitalization: TextCapitalization.characters,
-                              suffixIcon: Icon(Icons.confirmation_number_outlined, color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: 20),
+                              _buildInputLabel('Vehicle Number'),
+                              CustomTextField(
+                                controller: _vehicleNoController,
+                                hintText: 'KL-01-AB-1234',
+                                textCapitalization: TextCapitalization.characters,
+                                suffixIcon: Icon(Icons.confirmation_number_outlined, color: AppColors.textSecondary),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Vehicle number is required';
+                                  }
+                                  // Regex for Indian Vehicle Numbers
+                                  final vehicleRegex = RegExp(r'^[A-Z]{2}[ -]?[0-9]{1,2}[ -]?[A-Z]{1,3}[ -]?[0-9]{4}$');
+                                  
+                                  if (!vehicleRegex.hasMatch(value.toUpperCase())) {
+                                    return 'Invalid format.\nUse format like: KL-07-AB-1234 or KL07AB1234';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
 
-                            _buildInputLabel('Operating Area'),
-                            CustomTextField(
-                              controller: _areaController,
-                              hintText: 'e.g. Amritapuri, Karunagappally',
-                              textCapitalization: TextCapitalization.words,
-                              suffixIcon: Icon(Icons.location_on_outlined, color: AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: 32),
-                            
-                            CustomButton(
-                              text: 'Add Driver',
-                              onPressed: () => _submitNewDriver(context),
-                              showArrow: true,
-                            ),
-                            const SizedBox(height: 20),
-                          ],
+                              _buildInputLabel('Operating Area'),
+                              CustomTextField(
+                                controller: _areaController,
+                                hintText: 'e.g. Amritapuri, Karunagappally',
+                                textCapitalization: TextCapitalization.words,
+                                suffixIcon: Icon(Icons.location_on_outlined, color: AppColors.textSecondary),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Operating area is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 32),
+                              
+                              CustomButton(
+                                text: 'Add Driver',
+                                onPressed: () => _submitNewDriver(context),
+                                showArrow: true,
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -268,27 +313,26 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
   }
 
   Future<void> _submitNewDriver(BuildContext sheetContext) async {
-    if (_nameController.text.isEmpty || 
-        _phoneController.text.isEmpty || 
-        _vehicleNoController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
-      );
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
     try {
+      // Create the driver object
+      // We manually add the +91 prefix here before sending to Firebase
+      // to maintain consistency with the hardcoded data format
       final newDriver = Driver(
-        id: '', // Generated by Firebase
-        name: _nameController.text,
-        phoneNumber: _phoneController.text,
+        id: '', // Empty ID, Firestore will generate one
+        name: _nameController.text.trim(),
+        phoneNumber: '+91 ${_phoneController.text.trim()}',
         vehicleType: _newDriverType,
-        vehicleNumber: _vehicleNoController.text,
-        area: _areaController.text,
+        vehicleNumber: _vehicleNoController.text.trim().toUpperCase(),
+        area: _areaController.text.trim(),
         rating: 0.0,
-        isVerified: true, // Auto-verify for testing as requested
+        isVerified: true, // Auto-verify for testing visibility
       );
 
+      // Call the service to add to Firebase
       await _driverService.addDriver(newDriver);
       
       if (mounted) {
@@ -296,7 +340,7 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
         _clearForm();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Driver added successfully!'),
+            content: Text('Driver added to database successfully!'),
             backgroundColor: AppColors.accentGreen,
           ),
         );
@@ -321,12 +365,10 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
 
   List<Driver> _filterDrivers(List<Driver> allDrivers) {
     return allDrivers.where((driver) {
-      // 1. Filter by Type
       if (selectedFilter != 'all' && driver.vehicleType != selectedFilter) {
         return false;
       }
       
-      // 2. Search Query
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
         return driver.name.toLowerCase().contains(query) ||
@@ -469,6 +511,7 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                     return const Center(child: Text('Error loading drivers', style: TextStyle(color: AppColors.textSecondary)));
                   }
 
+                  // Data comes in pre-filtered for 'Verified Only' by the Service
                   final allVerifiedDrivers = snapshot.data ?? [];
                   final drivers = _filterDrivers(allVerifiedDrivers);
 

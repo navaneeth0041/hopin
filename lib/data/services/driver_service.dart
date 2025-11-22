@@ -4,8 +4,9 @@ import 'package:hopin/data/models/home/driver_model.dart';
 class DriverService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // "Old Times" Hardcoded Drivers
-  // Note: 'Vinod Kumar' is verified: false, so he will be automatically hidden by the logic below.
+  // --- "Old Times" Hardcoded Drivers ---
+  // Kept as requested. Note: 'Vinod Kumar' (ID 5) is verified: false, 
+  // so he will NOT be shown in the app due to the filter below.
   final List<Driver> _hardcodedDrivers = [
     Driver(
       id: '1',
@@ -55,7 +56,7 @@ class DriverService {
       vehicleNumber: 'KL-07 IJ 7890',
       area: 'Amritapuri',
       rating: 4.5,
-      isVerified: false, // This driver will be hidden
+      isVerified: false, // This driver will be HIDDEN
     ),
     Driver(
       id: '6',
@@ -89,34 +90,43 @@ class DriverService {
     ),
   ];
 
-  // Stream that merges Firebase drivers with Hardcoded drivers
-  // AND filters for ONLY verified drivers
+  /// Fetches ONLY Verified drivers from Firestore and merges them 
+  /// with ONLY Verified drivers from the hardcoded list.
   Stream<List<Driver>> getVerifiedDrivers() {
     return _firestore
         .collection('drivers')
-        .where('isVerified', isEqualTo: true)
+        .where('isVerified', isEqualTo: true) // Filter Firestore Data
         .snapshots()
         .map((snapshot) {
-      // 1. Fetch Firestore Drivers
+      // 1. Convert Firestore Docs to Driver objects
       final firestoreDrivers = snapshot.docs.map((doc) {
         var data = doc.data();
-        data['id'] = doc.id;
+        // Inject the Firestore Document ID into the model
+        data['id'] = doc.id; 
+        // Handle cases where int comes as double from JSON
+        if (data['rating'] is int) {
+          data['rating'] = (data['rating'] as int).toDouble();
+        }
         return Driver.fromJson(data);
       }).toList();
 
-      // 2. Filter Hardcoded Drivers (Keep only verified ones)
+      // 2. Filter Hardcoded List
       final verifiedHardcoded = _hardcodedDrivers
           .where((driver) => driver.isVerified)
           .toList();
 
-      // 3. Merge and Return
+      // 3. Merge Both Lists
       return [...verifiedHardcoded, ...firestoreDrivers];
     });
   }
 
+  /// Adds a new driver to Firebase
   Future<void> addDriver(Driver driver) async {
-    // When adding via the app, we set them to 'verified: true' for now 
-    // so you can see them immediately during testing.
-    await _firestore.collection('drivers').add(driver.toJson());
+    // We use .toJson() to exclude the 'id' field if your model handles it,
+    // or we create a map that doesn't include the empty ID string.
+    final data = driver.toJson();
+    data.remove('id'); // Let Firestore generate the ID
+    
+    await _firestore.collection('drivers').add(data);
   }
 }
