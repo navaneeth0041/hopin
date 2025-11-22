@@ -145,7 +145,7 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
           width: 120,
           height: 90,
           point: LatLng(tripLat, tripLng),
-          child: Container(
+          child: SizedBox(
             width: 120,
             height: 90,
             child: Column(
@@ -490,7 +490,7 @@ class _TripsMapState extends State<TripsMap> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                  )).toList(),
+                  )),
                 ],
               ),
             ],

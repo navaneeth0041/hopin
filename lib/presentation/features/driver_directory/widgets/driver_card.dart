@@ -25,9 +25,8 @@ class DriverCard extends StatelessWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: driver.isVerified
-              ? AppColors.primaryYellow.withOpacity(0.2)
-              : Colors.transparent,
+          // Simplified border logic
+          color: AppColors.divider,
           width: 1,
         ),
       ),
@@ -88,6 +87,7 @@ class DriverCard extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              // Verification Badge is kept as requested for verified drivers
                               if (driver.isVerified)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -122,25 +122,7 @@ class DriverCard extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 16,
-                                color: AppColors.primaryYellow,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                driver.rating.toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
+                          // Rating Row REMOVED here
                           const SizedBox(height: 8),
                           Row(
                             children: [

@@ -118,7 +118,7 @@ class TripFilterService {
     }
 
     if (joinableTrips > 0) {
-      parts.add('${joinableTrips} available to join');
+      parts.add('$joinableTrips available to join');
     }
 
     String message;

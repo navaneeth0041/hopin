@@ -13,6 +13,7 @@ class RouteNames {
 
   static const String emergencyContact = '/emergency-contact';
   static const String driverDirectory = '/driver-directory';
+  static const String addDriver = '/add-driver'; // keep your new route
 
   static const String reportSupport = '/report-support';
   static const String myReport = '/my-reports';

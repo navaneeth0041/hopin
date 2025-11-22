@@ -1,8 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:ui'; // For BackdropFilter
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/models/home/driver_model.dart';
+import 'package:hopin/data/services/driver_service.dart';
+import 'package:hopin/presentation/common_widgets/custom_button.dart';
+import 'package:hopin/presentation/common_widgets/custom_text_field.dart';
 import 'widgets/driver_card.dart';
 import 'widgets/driver_filter_chip.dart';
 
@@ -14,230 +18,335 @@ class DriverDirectoryScreen extends StatefulWidget {
 }
 
 class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
+  final DriverService _driverService = DriverService();
   String selectedFilter = 'all';
-  String sortBy = 'rating';
   String searchQuery = '';
+  
+  // Controllers
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _vehicleNoController = TextEditingController();
+  final _areaController = TextEditingController();
+  String _newDriverType = 'auto';
 
-  final List<Driver> allDrivers = [
-    Driver(
-      id: '1',
-      name: 'Raju Kumar',
-      phoneNumber: '+91 98765 43210',
-      vehicleType: 'auto',
-      vehicleNumber: 'KL-07 AB 1234',
-      area: 'Amritapuri',
-      rating: 4.8,
-      isVerified: true,
-    ),
-    Driver(
-      id: '2',
-      name: 'Suresh Babu',
-      phoneNumber: '+91 98765 43211',
-      vehicleType: 'taxi',
-      vehicleNumber: 'KL-07 CD 5678',
-      area: 'Kollam',
-      rating: 4.9,
-      isVerified: true,
-    ),
-    Driver(
-      id: '3',
-      name: 'Anil Kumar',
-      phoneNumber: '+91 98765 43212',
-      vehicleType: 'auto',
-      vehicleNumber: 'KL-07 EF 9012',
-      area: 'Karunagappally',
-      rating: 4.6,
-      isVerified: true,
-    ),
-    Driver(
-      id: '4',
-      name: 'Mohan Das',
-      phoneNumber: '+91 98765 43213',
-      vehicleType: 'taxi',
-      vehicleNumber: 'KL-07 GH 3456',
-      area: 'Haripad',
-      rating: 4.7,
-      isVerified: true,
-    ),
-    Driver(
-      id: '5',
-      name: 'Vinod Kumar',
-      phoneNumber: '+91 98765 43214',
-      vehicleType: 'auto',
-      vehicleNumber: 'KL-07 IJ 7890',
-      area: 'Amritapuri',
-      rating: 4.5,
-      isVerified: false,
-    ),
-    Driver(
-      id: '6',
-      name: 'Ramesh Pillai',
-      phoneNumber: '+91 98765 43215',
-      vehicleType: 'taxi',
-      vehicleNumber: 'KL-07 KL 2345',
-      area: 'Kollam',
-      rating: 4.9,
-      isVerified: true,
-    ),
-    Driver(
-      id: '7',
-      name: 'Ajay Kumar',
-      phoneNumber: '+91 98765 43216',
-      vehicleType: 'auto',
-      vehicleNumber: 'KL-07 MN 6789',
-      area: 'Kayamkulam',
-      rating: 4.4,
-      isVerified: true,
-    ),
-    Driver(
-      id: '8',
-      name: 'Krishna Das',
-      phoneNumber: '+91 98765 43217',
-      vehicleType: 'taxi',
-      vehicleNumber: 'KL-07 OP 0123',
-      area: 'Amritapuri',
-      rating: 4.8,
-      isVerified: true,
-    ),
-  ];
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _vehicleNoController.dispose();
+    _areaController.dispose();
+    super.dispose();
+  }
 
-  List<Driver> get filteredDrivers {
-    var drivers = allDrivers.where((driver) {
+  // ---- COOLER UI BOTTOM SHEET ----
+  void _showAddDriverBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent, // Important for the blur effect
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground.withOpacity(0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border(
+              top: BorderSide(color: AppColors.primaryYellow.withOpacity(0.3), width: 1),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 40,
+                spreadRadius: 0,
+                offset: const Offset(0, -10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                    24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag Handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.textSecondary.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add New Driver',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Fill in the driver details below',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.textSecondary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInputLabel('Full Name'),
+                            CustomTextField(
+                              controller: _nameController,
+                              hintText: 'Enter driver name',
+                              textCapitalization: TextCapitalization.words,
+                              suffixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 20),
+                            
+                            _buildInputLabel('Phone Number'),
+                            CustomTextField(
+                              controller: _phoneController,
+                              hintText: '+91 XXXXX XXXXX',
+                              keyboardType: TextInputType.phone,
+                              suffixIcon: Icon(Icons.phone_outlined, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 20),
+                            
+                            _buildInputLabel('Vehicle Type'),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildSelectionCard(
+                                    label: 'Auto Rickshaw',
+                                    icon: Icons.airport_shuttle,
+                                    isSelected: _newDriverType == 'auto',
+                                    onTap: () => setSheetState(() => _newDriverType = 'auto'),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildSelectionCard(
+                                    label: 'Taxi / Car',
+                                    icon: Icons.local_taxi,
+                                    isSelected: _newDriverType == 'taxi',
+                                    onTap: () => setSheetState(() => _newDriverType = 'taxi'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            _buildInputLabel('Vehicle Number'),
+                            CustomTextField(
+                              controller: _vehicleNoController,
+                              hintText: 'e.g. KL-01-AB-1234',
+                              textCapitalization: TextCapitalization.characters,
+                              suffixIcon: Icon(Icons.confirmation_number_outlined, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 20),
+
+                            _buildInputLabel('Operating Area'),
+                            CustomTextField(
+                              controller: _areaController,
+                              hintText: 'e.g. Amritapuri, Karunagappally',
+                              textCapitalization: TextCapitalization.words,
+                              suffixIcon: Icon(Icons.location_on_outlined, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 32),
+                            
+                            CustomButton(
+                              text: 'Add Driver',
+                              onPressed: () => _submitNewDriver(context),
+                              showArrow: true,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, left: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionCard({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppColors.primaryYellow.withOpacity(0.15) 
+              : AppColors.darkBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryYellow : AppColors.divider,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primaryYellow : AppColors.textSecondary,
+              size: 28,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.primaryYellow : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitNewDriver(BuildContext sheetContext) async {
+    if (_nameController.text.isEmpty || 
+        _phoneController.text.isEmpty || 
+        _vehicleNoController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    try {
+      final newDriver = Driver(
+        id: '', // Generated by Firebase
+        name: _nameController.text,
+        phoneNumber: _phoneController.text,
+        vehicleType: _newDriverType,
+        vehicleNumber: _vehicleNoController.text,
+        area: _areaController.text,
+        rating: 0.0,
+        isVerified: true, // Auto-verify for testing as requested
+      );
+
+      await _driverService.addDriver(newDriver);
+      
+      if (mounted) {
+        Navigator.pop(sheetContext);
+        _clearForm();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Driver added successfully!'),
+            backgroundColor: AppColors.accentGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding driver: $e'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+    }
+  }
+
+  void _clearForm() {
+    _nameController.clear();
+    _phoneController.clear();
+    _vehicleNoController.clear();
+    _areaController.clear();
+    _newDriverType = 'auto';
+  }
+
+  List<Driver> _filterDrivers(List<Driver> allDrivers) {
+    return allDrivers.where((driver) {
+      // 1. Filter by Type
       if (selectedFilter != 'all' && driver.vehicleType != selectedFilter) {
         return false;
       }
-
+      
+      // 2. Search Query
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
         return driver.name.toLowerCase().contains(query) ||
             driver.vehicleNumber.toLowerCase().contains(query) ||
             driver.area.toLowerCase().contains(query);
       }
-
       return true;
     }).toList();
-
-    switch (sortBy) {
-      case 'rating':
-        drivers.sort((a, b) => b.rating.compareTo(a.rating));
-        break;
-      case 'name':
-        drivers.sort((a, b) => a.name.compareTo(b.name));
-        break;
-    }
-
-    return drivers;
-  }
-
-  void _showSortBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppColors.darkBackground,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.textSecondary.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Sort By',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildSortOption('Highest Rating', 'rating', Icons.star_rounded),
-              _buildSortOption('Name (A-Z)', 'name', Icons.sort_by_alpha),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSortOption(String label, String value, IconData icon) {
-    final isSelected = sortBy == value;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            sortBy = value;
-          });
-          Navigator.pop(context);
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primaryYellow.withOpacity(0.15)
-                : AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primaryYellow : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? AppColors.primaryYellow
-                    : AppColors.textSecondary,
-                size: 22,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: AppColors.primaryYellow,
-                  size: 20,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final drivers = filteredDrivers;
-
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddDriverBottomSheet,
+        backgroundColor: AppColors.primaryYellow,
+        elevation: 4,
+        child: const Icon(Icons.add, color: Colors.black, size: 28),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -250,18 +359,18 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                     child: Container(
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C2E),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2C2C2E),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.arrow_back_ios_new,
                         color: AppColors.textPrimary,
                         size: 20,
                       ),
                     ),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Center(
                       child: Text(
                         'Driver Directory',
@@ -284,6 +393,13 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: TextField(
                   onChanged: (value) {
@@ -291,8 +407,8 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                       searchQuery = value;
                     });
                   },
-                  style: TextStyle(color: AppColors.textPrimary),
-                  decoration: InputDecoration(
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(
                     hintText: 'Search drivers, vehicles, or areas...',
                     hintStyle: TextStyle(color: AppColors.textSecondary),
                     prefixIcon: Icon(
@@ -300,7 +416,7 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                       color: AppColors.textSecondary,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(16),
+                    contentPadding: EdgeInsets.all(16),
                   ),
                 ),
               ),
@@ -319,69 +435,21 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                     label: 'All',
                     icon: Icons.grid_view,
                     isSelected: selectedFilter == 'all',
-                    onTap: () {
-                      setState(() {
-                        selectedFilter = 'all';
-                      });
-                    },
+                    onTap: () => setState(() => selectedFilter = 'all'),
                   ),
                   const SizedBox(width: 8),
                   DriverFilterChip(
                     label: 'Auto',
                     icon: Icons.airport_shuttle,
                     isSelected: selectedFilter == 'auto',
-                    onTap: () {
-                      setState(() {
-                        selectedFilter = 'auto';
-                      });
-                    },
+                    onTap: () => setState(() => selectedFilter = 'auto'),
                   ),
                   const SizedBox(width: 8),
                   DriverFilterChip(
                     label: 'Taxi',
                     icon: Icons.local_taxi,
                     isSelected: selectedFilter == 'taxi',
-                    onTap: () {
-                      setState(() {
-                        selectedFilter = 'taxi';
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _showSortBottomSheet,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.divider, width: 1),
-                      ),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.tune,
-                              size: 16,
-                              color: AppColors.primaryYellow,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Sort',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    onTap: () => setState(() => selectedFilter = 'taxi'),
                   ),
                 ],
               ),
@@ -389,51 +457,33 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
 
             const SizedBox(height: 24),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Row(
-                children: [
-                  Text(
-                    '${drivers.length} ${drivers.length == 1 ? 'Driver' : 'Drivers'} Found',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.verified_user,
-                    size: 16,
-                    color: AppColors.primaryYellow,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${drivers.where((d) => d.isVerified).length} Verified',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
             Expanded(
-              child: drivers.isEmpty
-                  ? Center(
+              child: StreamBuilder<List<Driver>>(
+                stream: _driverService.getVerifiedDrivers(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: AppColors.primaryYellow));
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return const Center(child: Text('Error loading drivers', style: TextStyle(color: AppColors.textSecondary)));
+                  }
+
+                  final allVerifiedDrivers = snapshot.data ?? [];
+                  final drivers = _filterDrivers(allVerifiedDrivers);
+
+                  if (drivers.isEmpty) {
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.search_off,
                             size: 64,
-                            color: AppColors.textSecondary,
+                            color: AppColors.textSecondary.withOpacity(0.5),
                           ),
                           const SizedBox(height: 16),
-                          Text(
+                          const Text(
                             'No Drivers Found',
                             style: TextStyle(
                               fontSize: 18,
@@ -441,26 +491,21 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try adjusting your filters',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
                         ],
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                      itemCount: drivers.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        return DriverCard(driver: drivers[index], onTap: () {});
-                      },
-                    ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+                    itemCount: drivers.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      return DriverCard(driver: drivers[index], onTap: () {});
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),

@@ -98,8 +98,7 @@ class _UpdatedCreateTripBottomSheetState extends State<UpdatedCreateTripBottomSh
               onPrimary: Colors.black,
               surface: AppColors.cardBackground,
               onSurface: AppColors.textPrimary,
-            ),
-            dialogBackgroundColor: AppColors.cardBackground,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.cardBackground),
           ),
           child: child!,
         );
@@ -162,8 +161,7 @@ class _UpdatedCreateTripBottomSheetState extends State<UpdatedCreateTripBottomSh
               onPrimary: Colors.black,
               surface: AppColors.cardBackground,
               onSurface: AppColors.textPrimary,
-            ),
-            dialogBackgroundColor: AppColors.cardBackground,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.cardBackground),
           ),
           child: child!,
         );

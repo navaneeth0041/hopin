@@ -29,7 +29,7 @@ class _HomePageState extends State<HomePage> {
   String _personalizedMessage = 'Searching for trips in your area...';
   Position? _userLocation;
   bool _isLoadingLocation = true;
-  int _lastLogTime = 0;
+  final int _lastLogTime = 0;
 
   @override
   void initState() {

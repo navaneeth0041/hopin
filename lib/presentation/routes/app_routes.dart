@@ -22,6 +22,7 @@ import '../../presentation/features/settings/terms_of_service_screen.dart';
 import '../../presentation/features/settings/change_password_screen.dart';
 import '../../presentation/features/emergency_contact/emergency_contact_screen.dart';
 import '../../presentation/features/driver_directory/driver_directory_screen.dart';
+import '../../presentation/features/driver_directory/add_driver_screen.dart'; // ← ADD THIS IMPORT
 import '../../presentation/features/report_support/report_support_screen.dart';
 import '../../presentation/features/home/pages/create_trip_page.dart';
 import '../../presentation/features/home/pages/join_trip_page.dart';
@@ -44,6 +45,7 @@ class AppRoutes {
       RouteNames.editProfile: (context) => const EditProfileScreen(),
       RouteNames.emergencyContact: (context) => const EmergencyContactScreen(),
       RouteNames.driverDirectory: (context) => const DriverDirectoryScreen(),
+      RouteNames.addDriver: (context) => const AddDriverScreen(), // ← ADD THIS LINE
       RouteNames.reportSupport: (context) => const ReportSupportScreen(),
       RouteNames.myReport: (context) => const MyReportsScreen(),
       RouteNames.blockedUsers: (context) => const BlockedUsersScreen(),
@@ -110,6 +112,10 @@ class AppRoutes {
       case RouteNames.driverDirectory:
         return MaterialPageRoute(
           builder: (context) => const DriverDirectoryScreen(),
+        );
+      case RouteNames.addDriver: // ← ADD THIS CASE
+        return MaterialPageRoute(
+          builder: (context) => const AddDriverScreen(),
         );
       case RouteNames.reportSupport:
         return MaterialPageRoute(
