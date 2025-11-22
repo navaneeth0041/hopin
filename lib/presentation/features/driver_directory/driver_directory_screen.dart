@@ -318,9 +318,6 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
     }
 
     try {
-      // Create the driver object
-      // We manually add the +91 prefix here before sending to Firebase
-      // to maintain consistency with the hardcoded data format
       final newDriver = Driver(
         id: '', // Empty ID, Firestore will generate one
         name: _nameController.text.trim(),
@@ -329,19 +326,20 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
         vehicleNumber: _vehicleNoController.text.trim().toUpperCase(),
         area: _areaController.text.trim(),
         rating: 0.0,
-        isVerified: true, // Auto-verify for testing visibility
+        isVerified: false, // Set to FALSE as per new logic (Admin must verify)
       );
 
-      // Call the service to add to Firebase
       await _driverService.addDriver(newDriver);
       
       if (mounted) {
         Navigator.pop(sheetContext);
         _clearForm();
+        // Updated success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Driver added to database successfully!'),
+            content: Text('Driver added successfully! Waiting for admin verification.'),
             backgroundColor: AppColors.accentGreen,
+            duration: Duration(seconds: 4),
           ),
         );
       }
@@ -383,12 +381,7 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDriverBottomSheet,
-        backgroundColor: AppColors.primaryYellow,
-        elevation: 4,
-        child: const Icon(Icons.add, color: Colors.black, size: 28),
-      ),
+      // FloatingActionButton Removed
       body: SafeArea(
         child: Column(
           children: [
@@ -424,7 +417,23 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 44),
+                  // Added "Plus" button to Top Right
+                  GestureDetector(
+                    onTap: _showAddDriverBottomSheet,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2C2C2E),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: AppColors.primaryYellow,
+                        size: 24,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -511,7 +520,6 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                     return const Center(child: Text('Error loading drivers', style: TextStyle(color: AppColors.textSecondary)));
                   }
 
-                  // Data comes in pre-filtered for 'Verified Only' by the Service
                   final allVerifiedDrivers = snapshot.data ?? [];
                   final drivers = _filterDrivers(allVerifiedDrivers);
 
@@ -527,7 +535,7 @@ class _DriverDirectoryScreenState extends State<DriverDirectoryScreen> {
                           ),
                           const SizedBox(height: 16),
                           const Text(
-                            'No Drivers Found',
+                            'No Verified Drivers Found',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
