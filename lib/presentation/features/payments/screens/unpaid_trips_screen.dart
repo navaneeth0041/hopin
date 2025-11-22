@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/data/providers/trip_payment_provider.dart';
+import 'package:hopin/data/services/payment_reminder_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UnpaidTripsScreen extends StatefulWidget {
   const UnpaidTripsScreen({super.key});
@@ -12,7 +14,10 @@ class UnpaidTripsScreen extends StatefulWidget {
 }
 
 class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
+  final PaymentReminderService _reminderService = PaymentReminderService();
   bool _isLoading = true;
+  final Map<String, bool> _sendingReminders = {};
+  final Map<String, DateTime?> _lastReminderTimes = {};
 
   @override
   void initState() {
@@ -23,9 +28,149 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
   Future<void> _loadUnpaidTrips() async {
     final provider = Provider.of<TripPaymentProvider>(context, listen: false);
     await provider.checkPaymentStatus();
+
+    for (final trip in provider.unpaidTripDetails) {
+      final tripId = trip['tripId'] as String?;
+      if (tripId != null) {
+        final creatorId = await _getCreatorId(tripId);
+        if (creatorId != null) {
+          final lastTime = await _reminderService.getLastReminderTime(
+            tripId: tripId,
+            creatorId: creatorId,
+          );
+          _lastReminderTimes[tripId] = lastTime;
+        }
+      }
+    }
+
     if (mounted) {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<String?> _getCreatorId(String tripId) async {
+    try {
+      final tripDoc = await FirebaseFirestore.instance
+          .collection('trips')
+          .doc(tripId)
+          .get();
+      return tripDoc.data()?['createdBy'];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> _sendReminder(Map<String, dynamic> trip) async {
+    final tripId = trip['tripId'] as String;
+    final amount = (trip['amount'] as double?) ?? 0.0;
+
+    setState(() => _sendingReminders[tripId] = true);
+
+    try {
+      final tripDoc = await FirebaseFirestore.instance
+          .collection('trips')
+          .doc(tripId)
+          .get();
+
+      if (!tripDoc.exists) {
+        throw Exception('Trip not found');
+      }
+
+      final tripData = tripDoc.data()!;
+      final creatorId = tripData['createdBy'] as String;
+      final creatorName = tripData['creatorName'] as String;
+
+      final result = await _reminderService.sendPaymentReminder(
+        tripId: tripId,
+        creatorId: creatorId,
+        creatorName: creatorName,
+        amount: amount,
+      );
+
+      if (mounted) {
+        if (result['success']) {
+          _lastReminderTimes[tripId] = DateTime.now();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      result['message'] ?? 'Reminder sent successfully',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.accentGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(result['error'] ?? 'Failed to send reminder'),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.accentRed,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.accentRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _sendingReminders[tripId] = false);
+      }
+    }
+  }
+
+  String _getReminderButtonText(String tripId) {
+    final lastTime = _lastReminderTimes[tripId];
+    if (lastTime == null) return 'Notify Creator';
+
+    final hoursSince = DateTime.now().difference(lastTime).inHours;
+    if (hoursSince >= 24) return 'Notify Again';
+
+    final hoursRemaining = 24 - hoursSince;
+    return 'Notified ${hoursRemaining}h ago';
+  }
+
+  bool _canSendReminder(String tripId) {
+    final lastTime = _lastReminderTimes[tripId];
+    if (lastTime == null) return true;
+
+    final hoursSince = DateTime.now().difference(lastTime).inHours;
+    return hoursSince >= 24;
   }
 
   @override
@@ -216,14 +361,10 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
-              children: [
-                const Icon(
-                  Icons.block,
-                  color: AppColors.accentOrange,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
+              children: const [
+                Icon(Icons.block, color: AppColors.accentOrange, size: 20),
+                SizedBox(width: 12),
+                Expanded(
                   child: Text(
                     'Clear pending payments to create or join new trips',
                     style: TextStyle(
@@ -269,33 +410,37 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
           ),
           const SizedBox(height: 12),
           _buildInfoItem(
-            '1. Contact the trip creator',
-            'Arrange payment with the person who organized the trip',
-          ),
-          const SizedBox(height: 10),
-          _buildInfoItem(
-            '2. Complete the payment',
+            '1. Complete the payment',
             'Transfer the amount to the trip creator',
           ),
           const SizedBox(height: 10),
           _buildInfoItem(
-            '3. Ask them to confirm',
-            'Request the creator to mark your payment as received',
+            '2. Use "Notify Creator" button',
+            'Send a reminder to mark your payment as received',
+          ),
+          const SizedBox(height: 10),
+          _buildInfoItem(
+            '3. Wait for confirmation',
+            'The creator will mark your payment once verified',
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.accentRed.withOpacity(0.1),
+              color: AppColors.primaryYellow.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                Icon(Icons.warning_amber, color: AppColors.accentRed, size: 18),
+                Icon(
+                  Icons.notifications_active,
+                  color: AppColors.primaryYellow,
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
-                    'Dispute? Contact support if payment was already made',
+                    'You can send one reminder per trip every 24 hours',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -382,10 +527,13 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
   }
 
   Widget _buildTripCard(Map<String, dynamic> trip) {
+    final tripId = trip['tripId'] as String;
     final destination = trip['tripDestination'] ?? 'Unknown';
     final amount = (trip['amount'] as double?) ?? 0.0;
     final creatorName = trip['creatorName'] ?? 'Unknown';
     final tripDate = trip['tripDate'] as DateTime?;
+    final isSending = _sendingReminders[tripId] ?? false;
+    final canSend = _canSendReminder(tripId);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -510,6 +658,41 @@ class _UnpaidTripsScreenState extends State<UnpaidTripsScreen> {
                     ],
                   ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: canSend && !isSending
+                  ? () => _sendReminder(trip)
+                  : null,
+              icon: isSending
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                      ),
+                    )
+                  : Icon(
+                      canSend ? Icons.notifications_active : Icons.schedule,
+                      size: 18,
+                    ),
+              label: Text(_getReminderButtonText(tripId)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canSend
+                    ? AppColors.primaryYellow
+                    : AppColors.divider,
+                foregroundColor: canSend
+                    ? Colors.black
+                    : AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ),
         ],
