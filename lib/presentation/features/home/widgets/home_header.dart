@@ -166,7 +166,6 @@ class _HomeHeaderState extends State<HomeHeader> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
@@ -179,11 +178,19 @@ class _HomeHeaderState extends State<HomeHeader> {
                       ? profileProvider.userProfile.name.split(' ').first
                       : 'User';
                   
-                  return Text(
-                    'Hello, $userName!',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
+                  return Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.6, // Limit to 60% of screen width
+                    ),
+                    child: Text(
+                      'Hello, $userName!',
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
                     ),
                   );
                 },
@@ -229,7 +236,10 @@ class _HomeHeaderState extends State<HomeHeader> {
           ),
         ),
 
+        const SizedBox(width: 16),
+
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
 StreamBuilder<int>(
   stream: TripRequestService().getUnreadNotificationsCount(

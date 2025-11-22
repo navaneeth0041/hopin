@@ -22,23 +22,23 @@ class QuickActionButtons extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.primaryYellow.withOpacity(0.9),
-                    AppColors.primaryYellow.withOpacity(0.7),
+                    AppColors.primaryYellow.withValues(alpha: 0.9),
+                    AppColors.primaryYellow.withValues(alpha: 0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                   BoxShadow(
-                    color: AppColors.primaryYellow.withOpacity(0.3),
+                    color: AppColors.primaryYellow.withValues(alpha: 0.3),
                     blurRadius: 15,
                     spreadRadius: 2,
                   ),
@@ -199,24 +199,24 @@ class _ActionButton extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: isEmergency
                   ? [
-                      AppColors.accentRed.withOpacity(0.15),
-                      AppColors.accentRed.withOpacity(0.08),
+                      AppColors.accentRed.withValues(alpha: 0.15),
+                      AppColors.accentRed.withValues(alpha: 0.08),
                     ]
                   : [
-                      Colors.white.withOpacity(0.15),
-                      Colors.white.withOpacity(0.05),
+                      Colors.white.withValues(alpha: 0.15),
+                      Colors.white.withValues(alpha: 0.05),
                     ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isEmergency
-                  ? AppColors.accentRed.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.15),
+                  ? AppColors.accentRed.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.15),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 15,
                 offset: const Offset(0, 4),
               ),
