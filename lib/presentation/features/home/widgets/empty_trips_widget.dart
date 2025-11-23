@@ -19,6 +19,7 @@ class EmptyTripsWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Removed the circular icon container
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -81,42 +82,7 @@ class EmptyTripsWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (hasUserLocation && !isLoadingLocation) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryYellow.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.primaryYellow.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      color: AppColors.primaryYellow.withOpacity(0.8),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'Search radius: 2km',
-                      style: TextStyle(
-                        color: AppColors.primaryYellow,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+
           ],
         ),
       ),

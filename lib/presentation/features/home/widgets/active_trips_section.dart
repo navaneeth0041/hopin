@@ -251,7 +251,7 @@ class ActiveRideCard extends StatelessWidget {
         }
 
         if (activeTrip == null) {
-          return const SizedBox.shrink();
+          return const SizedBox(height: 0, width: 0);
         }
 
         final Trip trip = activeTrip;

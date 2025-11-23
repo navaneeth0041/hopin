@@ -6,12 +6,13 @@ import 'package:hopin/core/constants/app_colors.dart';
 import 'package:hopin/presentation/features/home/widgets/payment_notification_banner.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../widgets/home_header.dart';
-import '../widgets/quick_action_buttons.dart';
 import '../widgets/active_trips_section.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/nearby_trips_section.dart';
+import '../widgets/weather_widget.dart';
 import '../services/trip_filter_service.dart';
 import '../../../../data/providers/trip_provider.dart';
 import '../../../../data/models/trip.dart';
@@ -95,9 +96,11 @@ class _HomePageState extends State<HomePage> {
       builder: (context, tripProvider, child) {
         return Scaffold(
           backgroundColor: const Color.fromARGB(255, 17, 17, 17),
-          body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
+          body: Stack(
+            children: [
+              CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
               SliverAppBar(
                 expandedHeight: screenHeight * 0.65,
                 floating: false,
@@ -185,19 +188,30 @@ class _HomePageState extends State<HomePage> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.4),
+                        Colors.black.withOpacity(0.1),
+                        Colors.black.withOpacity(0.3),
+                        Colors.black.withOpacity(0.6),
                         Colors.black.withOpacity(0.8),
                         Colors.black,
                       ],
-                      stops: const [0.0, 0.2, 0.5, 0.7],
+                      stops: const [0.0, 0.1, 0.3, 0.5, 0.7, 1.0],
                     ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
 
                       const PaymentNotificationBanner(),
+
+                      const SizedBox(height: 20),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: WeatherWidget(userLocation: _userLocation),
+                      ),
+
+                      const SizedBox(height: 20),
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -296,53 +310,75 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      // Active trips section - only show if there are active trips
+                      Consumer<TripProvider>(
+                        builder: (context, tripProvider, child) {
+                          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                          
+                          final createdTrips = tripProvider.myCreatedTrips.where((trip) => 
+                            trip.status == TripStatus.active).toList();
+                          
+                          Trip? activeTrip;
+                          if (createdTrips.isNotEmpty) {
+                            activeTrip = createdTrips.first;
+                          } else {
+                            final joinedTrips = tripProvider.myJoinedTrips.where((trip) => 
+                              trip.status == TripStatus.active).toList();
+                            
+                            if (joinedTrips.isNotEmpty) {
+                              activeTrip = joinedTrips.first;
+                            }
+                          }
 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(25),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.white.withOpacity(0.18),
-                                    Colors.white.withOpacity(0.05),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  width: 1.2,
-                                  color: Colors.white.withOpacity(0.25),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color.fromARGB(
-                                      255,
-                                      0,
-                                      0,
-                                      0,
-                                    ).withOpacity(0.2),
-                                    blurRadius: 25,
-                                    offset: const Offset(0, 10),
+                          if (activeTrip == null) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Column(
+                            children: [
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(25),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Colors.white.withOpacity(0.18),
+                                            Colors.white.withOpacity(0.05),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(25),
+                                        border: Border.all(
+                                          width: 1.2,
+                                          color: Colors.white.withOpacity(0.25),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color.fromARGB(
+                                              255,
+                                              0,
+                                              0,
+                                              0,
+                                            ).withOpacity(0.2),
+                                            blurRadius: 25,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const ActiveRideCard(),
+                                    ),
                                   ),
-                                ],
+                                ),
                               ),
-                              child: const ActiveRideCard(),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: QuickActionButtons(),
+                            ],
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 30),
@@ -361,7 +397,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-        );
+        ],
+      ),
+    );
       },
     );
   }
