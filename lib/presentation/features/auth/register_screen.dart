@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../common_widgets/custom_button.dart';
 import '../../common_widgets/custom_text_field.dart';
-import '../../common_widgets/social_auth_button.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../routes/route_names.dart';
@@ -125,12 +124,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
     }
-  }
-
-  void _handleGoogleSignup() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-up coming soon!')),
-    );
   }
 
   Widget _buildFieldLabel(String label, {bool required = true}) {
@@ -472,44 +465,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 32),
-
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Divider(
-                            color: AppColors.divider,
-                            thickness: 1,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'Or',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary.withOpacity(0.6),
-                            ),
-                          ),
-                        ),
-                        const Expanded(
-                          child: Divider(
-                            color: AppColors.divider,
-                            thickness: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    SocialAuthButton(
-                      text: AppStrings.continueWithGoogle,
-                      icon: Icons.g_mobiledata,
-                      onPressed: _handleGoogleSignup,
-                    ),
-
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 40), // Increased spacing after removing buttons
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

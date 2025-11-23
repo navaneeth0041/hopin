@@ -54,6 +54,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width to size the logo dynamically
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: Center(
@@ -67,35 +70,34 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/images/HopIn.png',
-                      width: 380,
-                      height: 380,
-                      fit: BoxFit.contain,
+                    // Removed fixed width/height to prevent cutting off.
+                    // Using a percentage of screen width ensures it fits any screen.
+                    Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Image.asset(
+                        'assets/images/HopIn.png',
+                        width: screenWidth * 0.6, // 60% of screen width
+                        fit: BoxFit.contain, // Ensures the whole image is visible
+                      ),
                     ),
-                    Transform.translate(
-                      offset: const Offset(0, -80),
-                      child: Column(
-                        children: [
-                          const Text(
-                            'HopIn',
-                            style: TextStyle(
-                              color: AppColors.primaryYellow,
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Your Ride, Your Way',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 16,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
+                    // Adjusted spacing
+                    const SizedBox(height: 16),
+                    const Text(
+                      'HopIn',
+                      style: TextStyle(
+                        color: AppColors.primaryYellow,
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Your Ride, Your Way',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 16,
+                        letterSpacing: 1,
                       ),
                     ),
                   ],
